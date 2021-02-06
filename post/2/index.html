@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>关于 | 木头人</title>
+<title>ES使用过程中遇到的坑 | 木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="关于 | 木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="ES使用过程中遇到的坑 | 木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="关于" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/about/" />
+  <meta property="og:description" content="ES使用过程中遇到的坑" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/2/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="木头人" />
@@ -151,11 +151,17 @@
             <div class="post-heading">
               <span class="tags">
                 
+                <a href="https://yangyueren.github.io/tag/-X48vvFK4/" class="tag">Java</a>
+                
+                <a href="https://yangyueren.github.io/tag/G8d84sNBoy/" class="tag">Sprint boot</a>
+                
+                <a href="https://yangyueren.github.io/tag/6keKeZ9_mG/" class="tag">Elasticsearch</a>
+                
               </span>
-              <h1>关于</h1>
+              <h1>ES使用过程中遇到的坑</h1>
               <span class="meta">
                 Posted on
-                2019-01-25，1 min read
+                2019-07-21，5 min read
               </span>
             </div>
           
@@ -170,25 +176,73 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <blockquote>
-<p>欢迎来到我的小站呀，很高兴遇见你！🤝</p>
-</blockquote>
-<h2 id="关于本站">🏠 关于本站</h2>
-<h2 id="博主是谁">👨‍💻 博主是谁</h2>
-<h2 id="兴趣爱好">⛹ 兴趣爱好</h2>
-<h2 id="联系我呀">📬 联系我呀</h2>
+          <p>这是大三暑假完成的一个基于Elasticsearch的搜索引擎的心得篇，十五天的时间遇到了太多的坑，在此做记录。</p>
+<!-- more -->
+<h2 id="深度搜索引擎体会">深度搜索引擎体会</h2>
+<hr>
+<pre><code>从7月5号到7月19号，历时十五天的课程结束了，深深的松了一口气，可以缓解一下身心的压力。
+这次的项目，是这三年中做的最认真的一次，从5号到18号，每天晚上两点多睡，八点多起床吃早饭来机房，这门课让我半年来不早起不吃早饭的人，养成了吃早饭的习惯，每天来机房时手机的电量有90%，晚上回去的时候还能够剩下65%，每天的上班的六个小时，不熬夜是不可能的，每天晚上都在熬夜补充新的功能，一点点从0到1搭建起自己的系统，用了6台服务器，部署了ES的集群，成果颇丰。
+</code></pre>
+<p>以上是一些偏离主题的碎碎念，以下是正文。</p>
+<p>我们此次项目做的是深度搜索引擎，爬取了小鸡词典、微博、b站等方面的数据，将数据清洗后存到Elasticsearch中，为了充分发挥ES的优势，我使用了三台服务器用来跑ES，一台服务器跑后端程序，另外还有两台图片搜索引擎的服务器，由队友负责搭建。</p>
+<p>这个项目的简介可以在此<a href="https://github.com/yangyueren/ChaggieSearchEngine">github</a>仓库中找到，在此不做赘述，本文着重讲述遇到的问题。</p>
+<p>首先是Elasticsearch版本的问题，7.2的版本对java Springboot的支持太不友好了，maven里面找不到对7.2版本的ES的repository的插件，所以浪费了一天的时间在这个上面，期间我更换过到2.x的版本和5.x的版本，发现都不如人意，感谢其他组同学的支持，提供了解决思路，使用6.4的版本，最终解决问题。</p>
+<p>在ES部署过程中，我一开始就是部署成了集群的状态，对于后续的开发不利，因为我有一台阿里云服务器一直崩溃，所以集群也一直崩溃，而那台服务器又是主节点，在被折磨两天后毅然选择关掉那台服务器，找同学借了其他的服务器。这也拖累了后面的开发进度。如果我一开始就是先在单节点上部署，可以先进行后续的开发，等到最后再来调整服务器集群的问题，这样我在项目的个性化搜索推荐方面还可以做的更加出色。</p>
+<p>另一个坑是Springboot对ES的操作，Springboot在定义ES的索引的时候，没办法指定分词器，这就很尴尬。ES的默认分词器是英文的，对于中文的支持特特不友好。我输入的句子，他会拆分成一个个的字建立索引，这样的倒排索引，查一个句子的查询结果与预期的相关度相去甚远，归根结底是Spring自己建立索引时候我不会指定分词器，我最终选择学习ES的语法，首先配置好ES的index，只让Spring插入数据，不让他建索引，这样就解决了这个问题。</p>
+<p>另外就是在java中对ES进行数据的查询，repository有些鸡肋，很多想进行的查询都没办法用。我后来查到了一种方法，是加@Query注解，一定程度上缓解了这个问题。其次是sort的问题，我们想做多维的排序，但是ES对这个支持的不是很好，比如有300条数据hit，但是我加入了sort的排序方式，相关度很低的结果可能被拍到前面。于是我在ES中查询时候没有使用sort，但是限制了page size，50左右，然后对返回的一个page的内容进行手动排序，于是手写了多维排序的方法。</p>
+<p>为了java中的多维排序，我使用了最愚蠢的方法。我需要对time view like三个维度做多维排序，他们的排列组合有12种（3+6+6），于是我手写了12条下面的语句。</p>
+<pre><code class="language-java">/*按照view like time排序*/
+Collections.sort(modifyData, (a, b) -&gt; {
+                    if (!a.getView().equals(b.getView())) {
+                        return b.getView() - a.getView();
+                    } else {
+                        if (!a.getLike().equals(b.getLike())) {
+                            return b.getLike() - a.getLike();
+                        } else {
+                            if (!a.getTime().equals(b.getTime())) {
+                                return compareTime(b.getTime(),a.getTime());
+                            }
+                        }
+                    }
+                    return 0;
+                });
+
+/*按照like time view排序*/
+Collections.sort(modifyData, (a, b) -&gt; {
+                    if (!a.getLike().equals(b.getLike())) {
+                        return b.getLike() - a.getLike();
+                    } else {
+                        if (!a.getTime().equals(b.getTime())) {
+                            return compareTime(b.getTime(),a.getTime());
+                        } else {
+                            if (!a.getView().equals(b.getView())) {
+                                return b.getView() - a.getView();
+                            }
+                        }
+                    }
+
+                    return 0;
+                });
+</code></pre>
+<p>这是一个比较愚蠢的方法吧，但是确实解决了我的问题，能够解决问题的办法就是好方法！当然了，我也在一直思考如何有更加优美的写法。</p>
 
           <div class="toc-container"><ul class="markdownIt-TOC">
 <li>
 <ul>
-<li><a href="#%E5%85%B3%E4%BA%8E%E6%9C%AC%E7%AB%99">🏠 关于本站</a></li>
-<li><a href="#%E5%8D%9A%E4%B8%BB%E6%98%AF%E8%B0%81">👨‍💻 博主是谁</a></li>
-<li><a href="#%E5%85%B4%E8%B6%A3%E7%88%B1%E5%A5%BD">⛹ 兴趣爱好</a></li>
-<li><a href="#%E8%81%94%E7%B3%BB%E6%88%91%E5%91%80">📬 联系我呀</a></li>
+<li><a href="#%E6%B7%B1%E5%BA%A6%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E4%BD%93%E4%BC%9A">深度搜索引擎体会</a></li>
 </ul>
 </li>
 </ul>
 </div>
+          
+          <hr />
+          <p class="next-post">下一篇：
+            <a href="https://yangyueren.github.io/post/1/">
+              <span class="post-title">
+                Chaggie Search Engine&rarr;
+              </span>
+            </a>
+          </p>
           
           <div class="comment" style="text-align: center;">
             
