@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-06T08:30:51.169Z</updated>
+    <updated>2021-02-07T18:02:05.454Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -10,6 +10,228 @@
     <logo>https://yangyueren.github.io/images/avatar.png</logo>
     <icon>https://yangyueren.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 木头人</rights>
+    <entry>
+        <title type="html"><![CDATA[CSAPP RIO包用于I/O]]></title>
+        <id>https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/</id>
+        <link href="https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/">
+        </link>
+        <updated>2021-02-07T17:12:29.000Z</updated>
+        <content type="html"><![CDATA[<!-- more -->
+<pre><code class="language-markdown">RIO
+
+- 解决short count
+
+- 提供方便、健壮、高效的IO
+
+两类函数
+
+- 无缓冲的输入输出
+
+  rio_readn
+
+  rio_writen
+
+​		绝不会返回不足值
+
+- 带缓冲的输入输出
+
+​        rio_readlineb
+
+​            读文本行
+
+​            停止条件
+
+​                读了maxlen个字节
+
+​                遇到了EOF
+
+​                遇到了换行符
+
+​        rio_readnb
+
+​            读字节 不区分文本和二进制文件
+
+​            停止条件
+
+​           	 maxlen : 因为里面用了一个while循环，如果还有left，就继续读，如果buffer已经空了，就调用rio_read填充buffer后再读。
+
+​            	遇到EOF
+
+​        
+
+​        readlineb和readnb可以混用，但不能和readn混用
+</code></pre>
+<pre><code class="language-c">
+/****************************************
+ * The Rio package - Robust I/O functions
+ ****************************************/
+
+/*
+ * rio_readn - Robustly read n bytes (unbuffered)
+ */
+/* $begin rio_readn */
+ssize_t rio_readn(int fd, void *usrbuf, size_t n)
+{
+    size_t nleft = n;
+    ssize_t nread;
+    char *bufp = usrbuf;
+
+    while (nleft &gt; 0)
+    {
+        if ((nread = read(fd, bufp, nleft)) &lt; 0)
+        {
+            if (errno == EINTR) /* Interrupted by sig handler return */
+                nread = 0;      /* and call read() again */
+            else
+                return -1; /* errno set by read() */
+        }
+        else if (nread == 0)
+            break; /* EOF */
+        nleft -= nread;
+        bufp += nread;
+    }
+    return (n - nleft); /* Return &gt;= 0 */
+}
+/* $end rio_readn */
+
+/*
+ * rio_writen - Robustly write n bytes (unbuffered)
+ */
+/* $begin rio_writen */
+ssize_t rio_writen(int fd, void *usrbuf, size_t n)
+{
+    size_t nleft = n;
+    ssize_t nwritten;
+    char *bufp = usrbuf;
+
+    while (nleft &gt; 0)
+    {
+        if ((nwritten = write(fd, bufp, nleft)) &lt;= 0)
+        {
+            if (errno == EINTR) /* Interrupted by sig handler return */
+                nwritten = 0;   /* and call write() again */
+            else
+                return -1; /* errno set by write() */
+        }
+        nleft -= nwritten;
+        bufp += nwritten;
+    }
+    return n;
+}
+/* $end rio_writen */
+
+/* 
+ * rio_read - This is a wrapper for the Unix read() function that
+ *    transfers min(n, rio_cnt) bytes from an internal buffer to a user
+ *    buffer, where n is the number of bytes requested by the user and
+ *    rio_cnt is the number of unread bytes in the internal buffer. On
+ *    entry, rio_read() refills the internal buffer via a call to
+ *    read() if the internal buffer is empty.
+ */
+/* $begin rio_read */
+static ssize_t rio_read(rio_t *rp, char *usrbuf, size_t n)
+{
+    int cnt;
+
+    while (rp-&gt;rio_cnt &lt;= 0)
+    { /* Refill if buf is empty */
+        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buf,
+                           sizeof(rp-&gt;rio_buf));
+        if (rp-&gt;rio_cnt &lt; 0)
+        {
+            if (errno != EINTR) /* Interrupted by sig handler return */
+                return -1;
+        }
+        else if (rp-&gt;rio_cnt == 0) /* EOF */
+            return 0;
+        else
+            rp-&gt;rio_bufptr = rp-&gt;rio_buf; /* Reset buffer ptr */
+    }
+
+    /* Copy min(n, rp-&gt;rio_cnt) bytes from internal buf to user buf */
+    cnt = n;
+    if (rp-&gt;rio_cnt &lt; n)
+        cnt = rp-&gt;rio_cnt;
+    memcpy(usrbuf, rp-&gt;rio_bufptr, cnt);
+    rp-&gt;rio_bufptr += cnt;
+    rp-&gt;rio_cnt -= cnt;
+    return cnt;
+}
+/* $end rio_read */
+
+/*
+ * rio_readinitb - Associate a descriptor with a read buffer and reset buffer
+ */
+/* $begin rio_readinitb */
+void rio_readinitb(rio_t *rp, int fd)
+{
+    rp-&gt;rio_fd = fd;
+    rp-&gt;rio_cnt = 0;
+    rp-&gt;rio_bufptr = rp-&gt;rio_buf;
+}
+/* $end rio_readinitb */
+
+/*
+ * rio_readnb - Robustly read n bytes (buffered)
+ */
+/* $begin rio_readnb */
+ssize_t rio_readnb(rio_t *rp, void *usrbuf, size_t n)
+{
+    size_t nleft = n;
+    ssize_t nread;
+    char *bufp = usrbuf;
+
+    while (nleft &gt; 0)
+    {
+        if ((nread = rio_read(rp, bufp, nleft)) &lt; 0)
+            return -1; /* errno set by read() */
+        else if (nread == 0)
+            break; /* EOF */
+        nleft -= nread;
+        bufp += nread;
+    }
+    return (n - nleft); /* return &gt;= 0 */
+}
+/* $end rio_readnb */
+
+/* 
+ * rio_readlineb - Robustly read a text line (buffered)
+ */
+/* $begin rio_readlineb */
+ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
+{
+    int n, rc;
+    char c, *bufp = usrbuf;
+
+    for (n = 1; n &lt; maxlen; n++)
+    {
+        if ((rc = rio_read(rp, &amp;c, 1)) == 1)
+        {
+            *bufp++ = c;
+            if (c == '\n')
+            {
+                n++;
+                break;
+            }
+        }
+        else if (rc == 0)
+        {
+            if (n == 1)
+                return 0; /* EOF, no data read */
+            else
+                break; /* EOF, some data was read */
+        }
+        else
+            return -1; /* Error */
+    }
+    *bufp = 0;
+    return n - 1;
+}
+/* $end rio_readlineb */
+</code></pre>
+<p>ddd简介简单</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[ES使用过程中遇到的坑]]></title>
         <id>https://yangyueren.github.io/post/2/</id>

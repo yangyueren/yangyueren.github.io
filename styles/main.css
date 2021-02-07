@@ -678,27 +678,27 @@ Orginal Style from ethanschoonover.com/solarized (c) Jeremy Hull <sourdrums@gmai
   display: block;
   overflow-x: auto;
   padding: 0.5em;
-  background: #292A30;
-  color: #839496;
+  background: #f8f8f8;
+  color: #0f0f0f;
 }
 code.hljs {
   padding: 15px 20px;
-  line-height: 1.5;
+  line-height: 1.8;
   font-size: 14px;
   margin-bottom: 2.2em;
   font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, Courier, monospace;
   border-radius: 15px;
 }
 .hljs-title {
-  color: #6BDFFF;
+  color: #0c2df5;
 }
 .hljs-comment,
 .hljs-quote {
-  color: #5A994B;
+  color: #a15a21;
 }
 .hljs-type,
 .hljs-literal {
-  color: #DABAFF;
+  color: #9455d3;
 }
 .hljs-number {
   color: #CEBF77;
@@ -710,7 +710,7 @@ code.hljs {
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-addition {
-  color: #FF7AB2;
+  color: #bb9dc5;
   font-weight: 600;
 }
 /* Solarized Cyan */
