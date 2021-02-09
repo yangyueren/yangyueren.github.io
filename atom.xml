@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-07T18:09:43.627Z</updated>
+    <updated>2021-02-09T18:37:51.624Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -60,6 +60,110 @@
 ​        
 
 ​        readlineb和readnb可以混用，但不能和readn混用
+</code></pre>
+<pre><code class="language-c">/*my version of rio*/
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;errno.h&gt;
+
+typedef struct{
+    int rio_fd; //file descriptor
+    int rio_cnt; //unread bytes
+    char rio_buffer[32];
+    char *rio_p; //pointer to next unread byte;
+} rio_t;
+
+void rio_initb(rio_t *rp, int fd){
+    rp-&gt;rio_fd = fd;
+    rp-&gt;rio_cnt = 0;
+    rp-&gt;rio_p = rp-&gt;rio_buffer;
+}
+
+//把buffer里的拷贝进usrbuf
+int rio_read(rio_t *rp, char *usrbuf, size_t size){
+
+    while(rp-&gt;rio_cnt &lt;= 0){
+        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buffer, sizeof(rp-&gt;rio_buffer));
+        if(rp-&gt;rio_cnt &lt; 0){
+            if(errno != EINTR){
+                return -1;
+            }
+        }else if(rp-&gt;rio_cnt == 0){
+            return 0;
+        }else{
+            rp-&gt;rio_p = rp-&gt;rio_buffer;
+        }
+    }
+    int cnt = size;
+    if(cnt &gt; rp-&gt;rio_cnt){
+        cnt = rp-&gt;rio_cnt;
+    }
+    memcpy(usrbuf, rp-&gt;rio_p, cnt);
+    rp-&gt;rio_p += cnt;
+    rp-&gt;rio_cnt -= cnt;
+    return cnt;
+}
+
+int rio_readnb(rio_t *rp, char *des, size_t size){
+    int left = size;
+    int n;
+    char *p = des;
+    while(left &gt; 0){
+        n = rio_read(rp, p, left);
+        if(n &lt; 0){
+            return -1; /* errno set by read() */
+        }else if(n==0){
+            break; /* EOF */
+        }else{
+            left -= n;
+            p += n;
+        }
+    }
+    return (size - left);
+}
+
+int rio_readlineb(rio_t *rp, char* des, size_t max_size){
+    int left = max_size-1;
+    char *p = des;
+    int n;
+    while(left &gt; 0){
+        if(n = rio_read(rp, p, 1) == 1){
+            left--;
+            if(*p == '\n'){
+                p++;
+                break;
+            }else{
+                p++;
+            }
+            
+        }else if(n==0){
+            if(p == des) return 0; //no data read, EOF
+            else break; // some data read, EOF
+        }else{
+            return -1;
+        }
+    }
+    *p = 0;
+    return p-des;
+}
+
+int main()
+{
+    rio_t rt;
+    int fd1 = open(&quot;README2&quot;, O_RDONLY);
+    rio_initb(&amp;rt, fd1);
+
+    
+    char buf[64];
+    int size = 64;
+    rio_readlineb(&amp;rt, buf, size);
+    printf(&quot;%s&quot;, buf);
+
+}
 </code></pre>
 <pre><code class="language-c">
 /****************************************
@@ -229,7 +333,6 @@ ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
 }
 /* $end rio_readlineb */
 </code></pre>
-<p>ddd简介简单</p>
 ]]></content>
     </entry>
     <entry>
