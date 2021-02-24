@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-09T18:37:51.624Z</updated>
+    <updated>2021-02-24T14:43:22.063Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -10,6 +10,265 @@
     <logo>https://yangyueren.github.io/images/avatar.png</logo>
     <icon>https://yangyueren.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 木头人</rights>
+    <entry>
+        <title type="html"><![CDATA[前端 Vue-cli4.x项目执行顺序]]></title>
+        <id>https://yangyueren.github.io/post/qian-duan-vue-cli4x-xiang-mu-zhi-xing-shun-xu/</id>
+        <link href="https://yangyueren.github.io/post/qian-duan-vue-cli4x-xiang-mu-zhi-xing-shun-xu/">
+        </link>
+        <updated>2021-02-24T14:42:55.000Z</updated>
+        <content type="html"><![CDATA[<p>由于要做一个可视化，选择了vue，但是在使用过程中不清楚vue的启动过程导致写出的代码不够满意，于是在此理顺vue的启动过程。</p>
+<p>代码如下：</p>
+<pre><code>src
+--components
+|----HelloWorld.vue
+--router
+|----index.js
+--views
+|--Home.vue
+--App.vue
+main.js
+index.html
+</code></pre>
+<p>启动过程：main.js --&gt; App.vue --&gt; router/index.js --&gt; Home.vue --&gt; HelloWorld.vue</p>
+<p>index.html是初始文件，vue会替换掉id=app的dom<br>
+index.html</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1.0&quot;&gt;
+    &lt;title&gt;detection_web_vue&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;&lt;/div&gt;
+    &lt;!-- built files will be auto injected --&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+<p>main.js是首先执行的文件，是入口函数，创建一个Vue，把App component绑定到#app的dom<br>
+main.js</p>
+<pre><code>// The Vue build version to load with the `import` command
+// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
+import Vue from 'vue'
+import App from './App'
+import router from './router'
+
+Vue.config.productionTip = false
+
+/* eslint-disable no-new */
+new Vue({
+  el: '#app',
+  router,
+  components: { App },
+  template: '&lt;App/&gt;'
+})
+
+</code></pre>
+<p>这里的router-link会被渲染<br>
+router-view也会被渲染，进入router/index.js中<br>
+App.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div id=&quot;app&quot;&gt;
+    &lt;img src=&quot;./assets/logo.png&quot;&gt;
+    &lt;router-link to='/home'&gt; Home &lt;/router-link&gt;
+    &lt;router-view/&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+  name: 'App'
+}
+&lt;/script&gt;
+
+&lt;style&gt;
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+&lt;/style&gt;
+
+</code></pre>
+<p>引入了HelloWorld组件，在Home中使用<br>
+router/index.js</p>
+<pre><code>import Vue from 'vue'
+import Router from 'vue-router'
+import HelloWorld from '@/components/HelloWorld'
+import Home from '@/views/Home'
+
+Vue.use(Router)
+
+export default new Router({
+  routes: [
+    {
+      path: '/home',
+      name: 'Home',
+      component: Home
+    }
+  ]
+})
+
+</code></pre>
+<p>Home.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;hello&quot;&gt;
+    &lt;h2&gt;Essential Links&lt;/h2&gt;
+    &lt;HelloWorld/&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import HelloWorld from '@/components/HelloWorld.vue'
+export default {
+  name: 'Home',
+  components: {
+      HelloWorld
+  }
+}
+&lt;/script&gt;
+
+&lt;!-- Add &quot;scoped&quot; attribute to limit CSS to this component only --&gt;
+&lt;style scoped&gt;
+h1, h2 {
+  font-weight: normal;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+li {
+  display: inline-block;
+  margin: 0 10px;
+}
+a {
+  color: #42b983;
+}
+&lt;/style&gt;
+
+</code></pre>
+<p>HelloWorld.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;hello&quot;&gt;
+    &lt;h1&gt;{{ msg }}&lt;/h1&gt;
+    &lt;h2&gt;Essential Links&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Core Docs
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://forum.vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Forum
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://chat.vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Community Chat
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://twitter.com/vuejs&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Twitter
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;br&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vuejs-templates.github.io/webpack/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Docs for This Template
+        &lt;/a&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;h2&gt;Ecosystem&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://router.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vue-router
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vuex.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vuex
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vue-loader.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vue-loader
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://github.com/vuejs/awesome-vue&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          awesome-vue
+        &lt;/a&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+  name: 'HelloWorld',
+  data () {
+    return {
+      msg: 'Welcome to Your Vue.js App'
+    }
+  }
+}
+&lt;/script&gt;
+
+&lt;!-- Add &quot;scoped&quot; attribute to limit CSS to this component only --&gt;
+&lt;style scoped&gt;
+h1, h2 {
+  font-weight: normal;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+li {
+  display: inline-block;
+  margin: 0 10px;
+}
+a {
+  color: #42b983;
+}
+&lt;/style&gt;
+
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[CSAPP RIO包用于I/O]]></title>
         <id>https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/</id>

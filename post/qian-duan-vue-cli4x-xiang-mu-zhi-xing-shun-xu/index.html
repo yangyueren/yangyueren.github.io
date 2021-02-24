@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>CSAPP RIO包用于I/O | 木头人</title>
+<title>前端 Vue-cli4.x项目执行顺序 | 木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="CSAPP RIO包用于I/O | 木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="前端 Vue-cli4.x项目执行顺序 | 木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="CSAPP RIO包用于I/O" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/" />
+  <meta property="og:description" content="前端 Vue-cli4.x项目执行顺序" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/qian-duan-vue-cli4x-xiang-mu-zhi-xing-shun-xu/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="木头人" />
@@ -151,13 +151,11 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/BCxyA3-H-/" class="tag">RIO</a>
-                
               </span>
-              <h1>CSAPP RIO包用于I/O</h1>
+              <h1>前端 Vue-cli4.x项目执行顺序</h1>
               <span class="meta">
                 Posted on
-                2021-02-08，6 min read
+                2021-02-24，5 min read
               </span>
             </div>
           
@@ -172,331 +170,265 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <!-- more -->
-<pre><code class="language-markdown">RIO
-
-- 解决short count
-
-- 提供方便、健壮、高效的IO
-
-两类函数
-
-- 无缓冲的输入输出
-
-  rio_readn
-
-  rio_writen
-
-​		绝不会返回不足值
-
-- 带缓冲的输入输出
-
-​        rio_readlineb
-
-​            读文本行
-
-​            停止条件
-
-​                读了maxlen个字节
-
-​                遇到了EOF
-
-​                遇到了换行符
-
-​        rio_readnb
-
-​            读字节 不区分文本和二进制文件
-
-​            停止条件
-
-​           	 maxlen : 因为里面用了一个while循环，如果还有left，就继续读，如果buffer已经空了，就调用rio_read填充buffer后再读。
-
-​            	遇到EOF
-
-​        
-
-​        readlineb和readnb可以混用，但不能和readn混用
+          <p>由于要做一个可视化，选择了vue，但是在使用过程中不清楚vue的启动过程导致写出的代码不够满意，于是在此理顺vue的启动过程。</p>
+<p>代码如下：</p>
+<pre><code>src
+--components
+|----HelloWorld.vue
+--router
+|----index.js
+--views
+|--Home.vue
+--App.vue
+main.js
+index.html
 </code></pre>
-<pre><code class="language-c">/*my version of rio*/
-#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;sys/types.h&gt;
-#include &lt;sys/stat.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;string.h&gt;
-#include &lt;errno.h&gt;
+<p>启动过程：main.js --&gt; App.vue --&gt; router/index.js --&gt; Home.vue --&gt; HelloWorld.vue</p>
+<p>index.html是初始文件，vue会替换掉id=app的dom<br>
+index.html</p>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1.0&quot;&gt;
+    &lt;title&gt;detection_web_vue&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;&lt;/div&gt;
+    &lt;!-- built files will be auto injected --&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
 
-typedef struct{
-    int rio_fd; //file descriptor
-    int rio_cnt; //unread bytes
-    char rio_buffer[32];
-    char *rio_p; //pointer to next unread byte;
-} rio_t;
-
-void rio_initb(rio_t *rp, int fd){
-    rp-&gt;rio_fd = fd;
-    rp-&gt;rio_cnt = 0;
-    rp-&gt;rio_p = rp-&gt;rio_buffer;
-}
-
-//把buffer里的拷贝进usrbuf
-int rio_read(rio_t *rp, char *usrbuf, size_t size){
-
-    while(rp-&gt;rio_cnt &lt;= 0){
-        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buffer, sizeof(rp-&gt;rio_buffer));
-        if(rp-&gt;rio_cnt &lt; 0){
-            if(errno != EINTR){
-                return -1;
-            }
-        }else if(rp-&gt;rio_cnt == 0){
-            return 0;
-        }else{
-            rp-&gt;rio_p = rp-&gt;rio_buffer;
-        }
-    }
-    int cnt = size;
-    if(cnt &gt; rp-&gt;rio_cnt){
-        cnt = rp-&gt;rio_cnt;
-    }
-    memcpy(usrbuf, rp-&gt;rio_p, cnt);
-    rp-&gt;rio_p += cnt;
-    rp-&gt;rio_cnt -= cnt;
-    return cnt;
-}
-
-int rio_readnb(rio_t *rp, char *des, size_t size){
-    int left = size;
-    int n;
-    char *p = des;
-    while(left &gt; 0){
-        n = rio_read(rp, p, left);
-        if(n &lt; 0){
-            return -1; /* errno set by read() */
-        }else if(n==0){
-            break; /* EOF */
-        }else{
-            left -= n;
-            p += n;
-        }
-    }
-    return (size - left);
-}
-
-int rio_readlineb(rio_t *rp, char* des, size_t max_size){
-    int left = max_size-1;
-    char *p = des;
-    int n;
-    while(left &gt; 0){
-        if(n = rio_read(rp, p, 1) == 1){
-            left--;
-            if(*p == '\n'){
-                p++;
-                break;
-            }else{
-                p++;
-            }
-            
-        }else if(n==0){
-            if(p == des) return 0; //no data read, EOF
-            else break; // some data read, EOF
-        }else{
-            return -1;
-        }
-    }
-    *p = 0;
-    return p-des;
-}
-
-int main()
-{
-    rio_t rt;
-    int fd1 = open(&quot;README2&quot;, O_RDONLY);
-    rio_initb(&amp;rt, fd1);
-
-    
-    char buf[64];
-    int size = 64;
-    rio_readlineb(&amp;rt, buf, size);
-    printf(&quot;%s&quot;, buf);
-
-}
 </code></pre>
-<pre><code class="language-c">
-/****************************************
- * The Rio package - Robust I/O functions
- ****************************************/
+<p>main.js是首先执行的文件，是入口函数，创建一个Vue，把App component绑定到#app的dom<br>
+main.js</p>
+<pre><code>// The Vue build version to load with the `import` command
+// (runtime-only or standalone) has been set in webpack.base.conf with an alias.
+import Vue from 'vue'
+import App from './App'
+import router from './router'
 
-/*
- * rio_readn - Robustly read n bytes (unbuffered)
- */
-/* $begin rio_readn */
-ssize_t rio_readn(int fd, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nread;
-    char *bufp = usrbuf;
+Vue.config.productionTip = false
 
-    while (nleft &gt; 0)
+/* eslint-disable no-new */
+new Vue({
+  el: '#app',
+  router,
+  components: { App },
+  template: '&lt;App/&gt;'
+})
+
+</code></pre>
+<p>这里的router-link会被渲染<br>
+router-view也会被渲染，进入router/index.js中<br>
+App.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div id=&quot;app&quot;&gt;
+    &lt;img src=&quot;./assets/logo.png&quot;&gt;
+    &lt;router-link to='/home'&gt; Home &lt;/router-link&gt;
+    &lt;router-view/&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+  name: 'App'
+}
+&lt;/script&gt;
+
+&lt;style&gt;
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+&lt;/style&gt;
+
+</code></pre>
+<p>引入了HelloWorld组件，在Home中使用<br>
+router/index.js</p>
+<pre><code>import Vue from 'vue'
+import Router from 'vue-router'
+import HelloWorld from '@/components/HelloWorld'
+import Home from '@/views/Home'
+
+Vue.use(Router)
+
+export default new Router({
+  routes: [
     {
-        if ((nread = read(fd, bufp, nleft)) &lt; 0)
-        {
-            if (errno == EINTR) /* Interrupted by sig handler return */
-                nread = 0;      /* and call read() again */
-            else
-                return -1; /* errno set by read() */
-        }
-        else if (nread == 0)
-            break; /* EOF */
-        nleft -= nread;
-        bufp += nread;
+      path: '/home',
+      name: 'Home',
+      component: Home
     }
-    return (n - nleft); /* Return &gt;= 0 */
+  ]
+})
+
+</code></pre>
+<p>Home.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;hello&quot;&gt;
+    &lt;h2&gt;Essential Links&lt;/h2&gt;
+    &lt;HelloWorld/&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import HelloWorld from '@/components/HelloWorld.vue'
+export default {
+  name: 'Home',
+  components: {
+      HelloWorld
+  }
 }
-/* $end rio_readn */
+&lt;/script&gt;
 
-/*
- * rio_writen - Robustly write n bytes (unbuffered)
- */
-/* $begin rio_writen */
-ssize_t rio_writen(int fd, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nwritten;
-    char *bufp = usrbuf;
+&lt;!-- Add &quot;scoped&quot; attribute to limit CSS to this component only --&gt;
+&lt;style scoped&gt;
+h1, h2 {
+  font-weight: normal;
+}
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+li {
+  display: inline-block;
+  margin: 0 10px;
+}
+a {
+  color: #42b983;
+}
+&lt;/style&gt;
 
-    while (nleft &gt; 0)
-    {
-        if ((nwritten = write(fd, bufp, nleft)) &lt;= 0)
-        {
-            if (errno == EINTR) /* Interrupted by sig handler return */
-                nwritten = 0;   /* and call write() again */
-            else
-                return -1; /* errno set by write() */
-        }
-        nleft -= nwritten;
-        bufp += nwritten;
+</code></pre>
+<p>HelloWorld.vue</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;hello&quot;&gt;
+    &lt;h1&gt;{{ msg }}&lt;/h1&gt;
+    &lt;h2&gt;Essential Links&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Core Docs
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://forum.vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Forum
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://chat.vuejs.org&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Community Chat
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://twitter.com/vuejs&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Twitter
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;br&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vuejs-templates.github.io/webpack/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          Docs for This Template
+        &lt;/a&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;h2&gt;Ecosystem&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://router.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vue-router
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vuex.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vuex
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;http://vue-loader.vuejs.org/&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          vue-loader
+        &lt;/a&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;a
+          href=&quot;https://github.com/vuejs/awesome-vue&quot;
+          target=&quot;_blank&quot;
+        &gt;
+          awesome-vue
+        &lt;/a&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+  name: 'HelloWorld',
+  data () {
+    return {
+      msg: 'Welcome to Your Vue.js App'
     }
-    return n;
+  }
 }
-/* $end rio_writen */
+&lt;/script&gt;
 
-/* 
- * rio_read - This is a wrapper for the Unix read() function that
- *    transfers min(n, rio_cnt) bytes from an internal buffer to a user
- *    buffer, where n is the number of bytes requested by the user and
- *    rio_cnt is the number of unread bytes in the internal buffer. On
- *    entry, rio_read() refills the internal buffer via a call to
- *    read() if the internal buffer is empty.
- */
-/* $begin rio_read */
-static ssize_t rio_read(rio_t *rp, char *usrbuf, size_t n)
-{
-    int cnt;
-
-    while (rp-&gt;rio_cnt &lt;= 0)
-    { /* Refill if buf is empty */
-        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buf,
-                           sizeof(rp-&gt;rio_buf));
-        if (rp-&gt;rio_cnt &lt; 0)
-        {
-            if (errno != EINTR) /* Interrupted by sig handler return */
-                return -1;
-        }
-        else if (rp-&gt;rio_cnt == 0) /* EOF */
-            return 0;
-        else
-            rp-&gt;rio_bufptr = rp-&gt;rio_buf; /* Reset buffer ptr */
-    }
-
-    /* Copy min(n, rp-&gt;rio_cnt) bytes from internal buf to user buf */
-    cnt = n;
-    if (rp-&gt;rio_cnt &lt; n)
-        cnt = rp-&gt;rio_cnt;
-    memcpy(usrbuf, rp-&gt;rio_bufptr, cnt);
-    rp-&gt;rio_bufptr += cnt;
-    rp-&gt;rio_cnt -= cnt;
-    return cnt;
+&lt;!-- Add &quot;scoped&quot; attribute to limit CSS to this component only --&gt;
+&lt;style scoped&gt;
+h1, h2 {
+  font-weight: normal;
 }
-/* $end rio_read */
-
-/*
- * rio_readinitb - Associate a descriptor with a read buffer and reset buffer
- */
-/* $begin rio_readinitb */
-void rio_readinitb(rio_t *rp, int fd)
-{
-    rp-&gt;rio_fd = fd;
-    rp-&gt;rio_cnt = 0;
-    rp-&gt;rio_bufptr = rp-&gt;rio_buf;
+ul {
+  list-style-type: none;
+  padding: 0;
 }
-/* $end rio_readinitb */
-
-/*
- * rio_readnb - Robustly read n bytes (buffered)
- */
-/* $begin rio_readnb */
-ssize_t rio_readnb(rio_t *rp, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nread;
-    char *bufp = usrbuf;
-
-    while (nleft &gt; 0)
-    {
-        if ((nread = rio_read(rp, bufp, nleft)) &lt; 0)
-            return -1; /* errno set by read() */
-        else if (nread == 0)
-            break; /* EOF */
-        nleft -= nread;
-        bufp += nread;
-    }
-    return (n - nleft); /* return &gt;= 0 */
+li {
+  display: inline-block;
+  margin: 0 10px;
 }
-/* $end rio_readnb */
-
-/* 
- * rio_readlineb - Robustly read a text line (buffered)
- */
-/* $begin rio_readlineb */
-ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
-{
-    int n, rc;
-    char c, *bufp = usrbuf;
-
-    for (n = 1; n &lt; maxlen; n++)
-    {
-        if ((rc = rio_read(rp, &amp;c, 1)) == 1)
-        {
-            *bufp++ = c;
-            if (c == '\n')
-            {
-                n++;
-                break;
-            }
-        }
-        else if (rc == 0)
-        {
-            if (n == 1)
-                return 0; /* EOF, no data read */
-            else
-                break; /* EOF, some data was read */
-        }
-        else
-            return -1; /* Error */
-    }
-    *bufp = 0;
-    return n - 1;
+a {
+  color: #42b983;
 }
-/* $end rio_readlineb */
+&lt;/style&gt;
+
 </code></pre>
 
           <div class="toc-container"></div>
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/2/">
+            <a href="https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/">
               <span class="post-title">
-                ES使用过程中遇到的坑&rarr;
+                CSAPP RIO包用于I/O&rarr;
               </span>
             </a>
           </p>
