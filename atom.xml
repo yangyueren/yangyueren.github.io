@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-27T07:40:09.873Z</updated>
+    <updated>2021-02-27T14:42:02.363Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -10,6 +10,204 @@
     <logo>https://yangyueren.github.io/images/avatar.png</logo>
     <icon>https://yangyueren.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 木头人</rights>
+    <entry>
+        <title type="html"><![CDATA[C++ unique_lock future condition_variable]]></title>
+        <id>https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/</id>
+        <link href="https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/">
+        </link>
+        <updated>2021-02-27T14:39:51.000Z</updated>
+        <summary type="html"><![CDATA[<p>多线程的一些基础语法。</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>多线程的一些基础语法。</p>
+<!-- more -->
+<h2 id="stdunique_lock">std::unique_lock</h2>
+<p>使用std::unique_lock 比std::lock_guard更加灵活：std::lock_guard 不能显式的调用 lock 和 unlock，而 std::unique_lock 可以在声明后的任意位 置调用，可以缩小锁的作用范围，提供更高的并发度。</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;mutex&gt;
+#include &lt;thread&gt;
+
+using namespace std;
+int v = 1;
+void critical_sectin(int change_v){
+    static mutex mtx;
+    std::this_thread::sleep_for(std::chrono::milliseconds(change_v));
+    std::unique_lock&lt;std::mutex&gt; lock(mtx);
+    v = change_v;
+    std::cout &lt;&lt; v &lt;&lt; std::endl;
+
+    lock.unlock();
+
+    change_v++;
+
+    lock.lock();
+    v = change_v;
+    std::cout &lt;&lt; v &lt;&lt; std::endl;
+
+}
+int main(){
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::thread t1(critical_sectin, 590);
+    std::thread t2(critical_sectin, 66);
+    t1.join();
+    t2.join();
+    return 0;
+}
+</code></pre>
+<h2 id="stdfuture-对线程的返回结果进行封装">std::future 对线程的返回结果进行封装</h2>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;mutex&gt;
+#include &lt;thread&gt;
+#include &lt;future&gt;
+using namespace std;
+
+int main(){
+    std::packaged_task&lt;int(int)&gt; task([](int a) -&gt; int{
+        std::cout &lt;&lt; &quot;inside packaged_task &quot; &lt;&lt; a &lt;&lt; std::endl;
+        return a;
+    });
+    std::future&lt;int&gt; result = task.get_future();
+
+    std::thread(std::move(task), 8).detach(); //创建thread，传入package_task的参数
+    
+    result.wait();
+    std::cout &lt;&lt; result.get() &lt;&lt; std::endl;
+
+    
+    return 0;
+}
+</code></pre>
+<h2 id="stdcondition_variable">std::condition_variable</h2>
+<p>用于同步，解决死锁</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;mutex&gt;
+#include &lt;thread&gt;
+#include &lt;future&gt;
+#include &lt;condition_variable&gt;
+#include &lt;queue&gt;
+#include &lt;string&gt;
+using namespace std;
+
+int main(){
+    std::condition_variable cv;
+    std::mutex mtx;
+    std::queue&lt;int&gt; produced_nums;
+    bool notify = false;
+    auto producer = [&amp;](){
+        for (int i=1; ; i++){
+            std::this_thread::sleep_for(std::chrono::milliseconds(900));
+            std::unique_lock&lt;mutex&gt; lock(mtx);
+
+            std::cout &lt;&lt; &quot;producing &quot; &lt;&lt; i &lt;&lt; std::endl;
+
+            produced_nums.push(i);
+            notify = true;
+            cv.notify_all();
+
+        }
+    };
+    auto consumer = [&amp;](int csid){
+        while (true){
+            unique_lock&lt;mutex&gt; lock(mtx);
+
+            while (!notify){
+                cv.wait(lock);
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+            std::cout &lt;&lt; csid &lt;&lt; &quot; lock success&quot; &lt;&lt; std::endl;
+            if (!produced_nums.empty()){
+                auto result = produced_nums.front();
+                produced_nums.pop();
+                std::cout &lt;&lt; &quot;consumer &quot; &lt;&lt; csid &lt;&lt; &quot; : &quot; &lt;&lt; result &lt;&lt; &quot; &quot; &lt;&lt; produced_nums.size() &lt;&lt; std::endl;
+            }
+            notify = false;
+
+        }
+    };
+
+    thread produce(producer);
+    vector&lt;thread&gt; pool;
+    for (int i = 0; i &lt; 10; ++i) {
+        pool.push_back(thread(consumer, i));
+    }
+
+    produce.join();
+    for (int i = 0; i &lt; 10; ++i) {
+        pool[i].join();
+    }
+
+    return 0;
+}
+</code></pre>
+<p>condition_variable需要mutex和condition两个变量，在cv.wait(lock)后，需要检查条件是否满足（因为存在假唤醒）。</p>
+<p>consumer中wait被signal之后的过程：</p>
+<p>首先要拿到lock，然后cv.wait(lock, <a href=""></a>{return is_ready;});之后，线程开始休眠，被加入一个唤醒队列，同时释放锁。<br>
+cv.notify_all()之后，所有在wait的consumer线程被唤醒，然后开始lock，注意，如果mutex此时是被locked的，这些线程也不会再休眠了，会一直尝试加锁，直到加锁成功，进入临界区。</p>
+<p>官方样例：</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;thread&gt;
+#include &lt;mutex&gt;
+#include &lt;condition_variable&gt;
+ 
+std::mutex m;
+std::condition_variable cv;
+std::string data;
+bool ready = false;
+bool processed = false;
+ 
+void worker_thread()
+{
+    // Wait until main() sends data
+    std::unique_lock&lt;std::mutex&gt; lk(m);
+    cv.wait(lk, []{return ready;});
+ 
+    // after the wait, we own the lock.
+    std::cout &lt;&lt; &quot;Worker thread is processing data\n&quot;;
+    data += &quot; after processing&quot;;
+ 
+    // Send data back to main()
+    processed = true;
+    std::cout &lt;&lt; &quot;Worker thread signals data processing completed\n&quot;;
+ 
+    // Manual unlocking is done before notifying, to avoid waking up
+    // the waiting thread only to block again (see notify_one for details)
+    lk.unlock();
+    cv.notify_one();
+}
+ 
+int main()
+{
+    std::thread worker(worker_thread);
+ 
+    data = &quot;Example data&quot;;
+    // send data to the worker thread
+    {
+        std::lock_guard&lt;std::mutex&gt; lk(m);
+        ready = true;
+        std::cout &lt;&lt; &quot;main() signals data ready for processing\n&quot;;
+    }
+    cv.notify_one();
+ 
+    // wait for the worker
+    {
+        std::unique_lock&lt;std::mutex&gt; lk(m);
+        cv.wait(lk, []{return processed;});
+    }
+    std::cout &lt;&lt; &quot;Back in main(), data = &quot; &lt;&lt; data &lt;&lt; '\n';
+ 
+    worker.join();
+}
+</code></pre>
+<p>output:</p>
+<pre><code class="language-markdown">main() signals data ready for processing
+Worker thread is processing data
+Worker thread signals data processing completed
+Back in main(), data = Example data after processing
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[C++ T&&推导T的类型]]></title>
         <id>https://yangyueren.github.io/post/c-you-zhi-yin-yong/</id>
