@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-27T06:53:11.679Z</updated>
+    <updated>2021-02-27T06:57:59.652Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -11,12 +11,26 @@
     <icon>https://yangyueren.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 木头人</rights>
     <entry>
-        <title type="html"><![CDATA[C++ 右值引用]]></title>
+        <title type="html"><![CDATA[C++ T&&推导T的类型]]></title>
         <id>https://yangyueren.github.io/post/c-you-zhi-yin-yong/</id>
         <link href="https://yangyueren.github.io/post/c-you-zhi-yin-yong/">
         </link>
         <updated>2021-02-27T06:52:36.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="右值引用">右值引用</h1>
+        <summary type="html"><![CDATA[<p>T&amp;&amp;需要推导T的类型时的规则是什么？<br>
+为什么最好用 auto&amp;&amp;的形式？<br>
+非常量左值引用不能绑定右值<br>
+常量左值引用可以绑定右值<br>
+右值引用只能绑定右值<br>
+为什么需要完美转发？</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>T&amp;&amp;需要推导T的类型时的规则是什么？<br>
+为什么最好用 auto&amp;&amp;的形式？<br>
+非常量左值引用不能绑定右值<br>
+常量左值引用可以绑定右值<br>
+右值引用只能绑定右值<br>
+为什么需要完美转发？</p>
+<!-- more -->
+<h1 id="右值引用">右值引用</h1>
 <p>auto for loop</p>
 <ol>
 <li>
