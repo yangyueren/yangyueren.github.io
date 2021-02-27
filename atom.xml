@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-27T06:57:59.652Z</updated>
+    <updated>2021-02-27T07:28:07.188Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -30,6 +30,54 @@
 右值引用只能绑定右值<br>
 为什么需要完美转发？</p>
 <!-- more -->
+<p>右值语义的引出</p>
+<pre><code>void set(const string &amp; var1, const string &amp; var2){
+  m_var1 = var1;  //copy
+  m_var2 = var2;  //copy
+}
+A a1;
+string var1(&quot;string1&quot;);
+string var2(&quot;string2&quot;);
+a1.set(var1, var2); // OK to copy
+a1.set(&quot;temporary str1&quot;,&quot;temporary str2&quot;); //也需要copy，浪费
+
+# 引入右值语义
+void set(string &amp;&amp; var1, string &amp;&amp; var2){
+  //avoid unnecessary copy!
+  m_var1 = std::move(var1);  
+  m_var2 = std::move(var2);
+}
+A a1;
+//temporary, move! no copy!
+a1.set(&quot;temporary str1&quot;,&quot;temporary str2&quot;);
+
+#但是要重载两遍，代码重复，所以引入完美转发
+
+template&lt;typename T1, typename T2&gt;
+void set(T1 &amp;&amp; var1, T2 &amp;&amp; var2){
+  m_var1 = std::forward&lt;T1&gt;(var1);
+  m_var2 = std::forward&lt;T2&gt;(var2);
+}
+
+/*
+
+forward 能够转发 [const] T &amp;[T] 的所有情况
+const T &amp;
+T &amp;
+const T &amp;&amp;
+T &amp;&amp;
+
+when var1 is an rvalue, std::forward&lt;T1&gt; equals to static_cast&lt;[const] T1 &amp;&amp;&gt;(var1)
+when var1 is an lvalue, std::forward&lt;T1&gt; equals to static_cast&lt;[const] T1 &amp;&gt;(var1)
+
+如果外面传来了rvalue临时变量, 它就转发rvalue并且启用move语义.
+
+如果外面传来了lvalue, 它就转发lvalue并且启用复制. 然后它也还能保留const.
+*/
+
+
+
+</code></pre>
 <h1 id="右值引用">右值引用</h1>
 <p>auto for loop</p>
 <ol>
