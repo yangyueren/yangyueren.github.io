@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>木头人</title>
-    <updated>2021-02-27T14:42:02.363Z</updated>
+    <updated>2021-03-16T06:16:42.217Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -10,6 +10,528 @@
     <logo>https://yangyueren.github.io/images/avatar.png</logo>
     <icon>https://yangyueren.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, 木头人</rights>
+    <entry>
+        <title type="html"><![CDATA[MIT6.S081 syscall]]></title>
+        <id>https://yangyueren.github.io/post/mit6s081-syscall/</id>
+        <link href="https://yangyueren.github.io/post/mit6s081-syscall/">
+        </link>
+        <updated>2021-03-16T06:16:14.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="syscall的原理">syscall的原理：</h2>
+<p>在shell中，当输入某个命令，比如sysinfo，shell fork出一个进程调用sysinfo.c处理sysinfo命令，此时还处于user space；在sysinfo.c的main函数中，会进行系统调用，比如系统调用sysinfo，read，kill等，这些系统调用是通过usys.pl脚本，把sysinfo通过ecall跳转到kernel的部分。</p>
+<pre><code>sub entry {
+    my $name = shift;
+    print &quot;.global $name\n&quot;;
+    print &quot;${name}:\n&quot;;
+    print &quot; li a7, SYS_${name}\n&quot;;
+    print &quot; ecall\n&quot;;
+    print &quot; ret\n&quot;;
+}
+	
+entry(&quot;fork&quot;);
+entry(&quot;exit&quot;);
+entry(&quot;wait&quot;);
+entry(&quot;pipe&quot;);
+entry(&quot;sysinfo&quot;);
+</code></pre>
+<p>在kernel的syscall里面查SYS_sysinfo的函数位置，如何查找位置呢，kernel/syscall.c有一个</p>
+<pre><code>static uint64 (*syscalls[])(void) = {
+[SYS_fork]    sys_fork,
+[SYS_exit]    sys_exit,
+[SYS_wait]    sys_wait,
+[SYS_pipe]    sys_pipe
+}
+</code></pre>
+<p>可以通过SYSinfo找到对应的sys_sysinfo kernel中的函数，进行操作。</p>
+<h2 id="system-call-tracing">System call tracing</h2>
+<p>添加一个trace的系统调用</p>
+<p>sysproc.c</p>
+<pre><code>uint64
+sys_trace(void)
+{
+  int mask;
+  if(argint(0, &amp;mask) &lt; 0)
+    return -1;
+  myproc()-&gt;trace_mask = mask; //进程信息中记录mask
+  return 0;
+}
+</code></pre>
+<p>proc.h</p>
+<pre><code>
+// Per-process state
+struct proc {
+  struct spinlock lock;
+
+  // p-&gt;lock must be held when using these:
+  enum procstate state;        // Process state
+  struct proc *parent;         // Parent process
+  void *chan;                  // If non-zero, sleeping on chan
+  int killed;                  // If non-zero, have been killed
+  int xstate;                  // Exit status to be returned to parent's wait
+  int pid;                     // Process ID
+
+  // these are private to the process, so p-&gt;lock need not be held.
+  uint64 kstack;               // Virtual address of kernel stack
+  uint64 sz;                   // Size of process memory (bytes)
+  pagetable_t pagetable;       // User page table
+  struct trapframe *trapframe; // data page for trampoline.S
+  struct context context;      // swtch() here to run process
+  struct file *ofile[NOFILE];  // Open files
+  struct inode *cwd;           // Current directory
+  char name[16];               // Process name (debugging)
+  int trace_mask;               //记录trace mask
+
+};
+</code></pre>
+<p>syscall.c</p>
+<pre><code>
+static uint64 (*syscalls[])(void) = {
+[SYS_fork]    sys_fork,
+...
+[SYS_sysinfo] sys_sysinfo,
+};
+
+
+char* syscall_name[23] = {
+        &quot;0&quot;,
+        &quot;syscall fork&quot;,  
+        &quot;syscall exit&quot;,  
+        &quot;syscall wait&quot;,  
+        &quot;syscall pipe&quot;,  
+        &quot;syscall read&quot;,
+        &quot;syscall kill&quot;,
+        &quot;syscall exec&quot;,
+        &quot;syscall fstat&quot;,
+        &quot;syscall chdir&quot;,
+        &quot;syscall dup&quot;,
+        &quot;syscall getpid&quot;,
+        &quot;syscall sbrk&quot;,
+        &quot;syscall sleep&quot;,
+        &quot;syscall uptime&quot;,
+        &quot;syscall open&quot;,
+        &quot;syscall write&quot;,
+        &quot;syscall mknod&quot;,
+        &quot;syscall unlink&quot;,
+        &quot;syscall link&quot;,
+        &quot;syscall mkdir&quot;,
+        &quot;syscall close&quot;,
+        &quot;syscall trace&quot;,
+};
+void
+syscall(void)
+{
+
+  int num;
+  struct proc *p = myproc();
+
+  num = p-&gt;trapframe-&gt;a7;
+  if(num &gt; 0 &amp;&amp; num &lt; NELEM(syscalls) &amp;&amp; syscalls[num]) {
+
+    p-&gt;trapframe-&gt;a0 = syscalls[num]();
+    int trace_mask = p-&gt;trace_mask;
+	//判断是否对该syscall显示trace
+    if(trace_mask &gt;&gt; num &amp; 0x1){
+        printf(&quot;%d: %s -&gt; %d\n&quot;, p-&gt;pid, syscall_name[num], p-&gt;trapframe-&gt;a0);
+    }
+    
+  } else {
+    printf(&quot;%d %s: unknown sys call %d\n&quot;,
+            p-&gt;pid, p-&gt;name, num);
+    p-&gt;trapframe-&gt;a0 = -1;
+  }
+}
+
+
+
+</code></pre>
+<p>处理子进程，让mask能够继承<br>
+proc.c</p>
+<pre><code class="language-c">int
+fork(void)
+{
+  int i, pid;
+  struct proc *np;
+  struct proc *p = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Copy user memory from parent to child.
+  if(uvmcopy(p-&gt;pagetable, np-&gt;pagetable, p-&gt;sz) &lt; 0){
+    freeproc(np);
+    release(&amp;np-&gt;lock);
+    return -1;
+  }
+  np-&gt;sz = p-&gt;sz;
+
+  np-&gt;parent = p;
+
+  // copy saved user registers.
+  *(np-&gt;trapframe) = *(p-&gt;trapframe);
+
+  // Cause fork to return 0 in the child.
+  np-&gt;trapframe-&gt;a0 = 0;
+
+  // increment reference counts on open file descriptors.
+  for(i = 0; i &lt; NOFILE; i++)
+    if(p-&gt;ofile[i])
+      np-&gt;ofile[i] = filedup(p-&gt;ofile[i]);
+  np-&gt;cwd = idup(p-&gt;cwd);
+
+  safestrcpy(np-&gt;name, p-&gt;name, sizeof(p-&gt;name));
+
+  pid = np-&gt;pid;
+
+  np-&gt;state = RUNNABLE;
+
+  np-&gt;trace_mask = p-&gt;trace_mask; //传递trace_mask
+
+  release(&amp;np-&gt;lock);
+
+  return pid;
+}
+</code></pre>
+<h2 id="sysinfo">Sysinfo</h2>
+<p>打印出空闲的内存和未使用的进程<br>
+· 如何获取空闲内存：遍历kmem.freelist，每个元素是一个page<br>
+· 如何获取未使用的进程：遍历proc.c中的struct proc proc[NPROC];<br>
+· 如何将上述信息从内核传递到user space：copyout</p>
+<p>sysproc.c</p>
+<pre><code class="language-c">
+uint64
+sys_sysinfo(void)
+{
+  struct sysinfo info;
+  uint64 addr;
+  // 获取用户态传入的sysinfo结构体
+  if (argaddr(0, &amp;addr) &lt; 0)
+    return -1;
+  struct proc* p = myproc();
+  info.freemem = free_memory();
+  info.nproc = proc_unused_num();
+  
+  //copyout 传入user pagetable，info结构体的user space地址，把kernel中的info copy过去
+  if (copyout(p-&gt;pagetable, addr, (char*)&amp;info, sizeof(info)) &lt; 0)
+    return -1;
+  return 0;
+}
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[MIT6.S081 util]]></title>
+        <id>https://yangyueren.github.io/post/mit6s081-util/</id>
+        <link href="https://yangyueren.github.io/post/mit6s081-util/">
+        </link>
+        <updated>2021-03-16T06:15:29.000Z</updated>
+        <content type="html"><![CDATA[<p>第一个lab是熟悉xv6的system calls</p>
+<h2 id="sleep">sleep：</h2>
+<p>easy难度<br>
+在makefile的UPROGS添加$U/_sleep<br>
+在user/sleep.c中写以下代码：</p>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+  if(argc != 2){
+      fprintf(2, &quot;sleep needs an int as param.\n&quot;);
+      exit(1);
+  }
+  int i = atoi(argv[1]);
+  sleep(i);
+  
+  exit(0);
+}
+</code></pre>
+<h2 id="pingpong利用pipe在父子进程间通信利用子进程会继承父进程的打开文件符">pingpong：利用pipe在父子进程间通信（利用子进程会继承父进程的打开文件符）</h2>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+  if(argc &gt; 1){
+      fprintf(2, &quot;ping-pong doesn't need params\n&quot;);
+      exit(1);
+  }
+  char v = 0;
+  
+  int parent[2];
+  int child[2];
+  pipe(parent);
+  pipe(child);
+  if(fork() == 0){
+      //child
+      close(child[1]);
+      close(parent[0]);
+      read(child[0], &amp;v, 1);
+      
+      if(v==0){
+          printf(&quot;%d: received ping\n&quot;, getpid());
+      }else{
+          exit(1);
+      }
+      v = 1;
+      write(parent[1], &amp;v, 1);
+      close(child[0]);
+      close(parent[1]);
+
+  }else{
+      //parent
+      close(child[0]);
+      close(parent[1]);
+      write(child[1], &amp;v, 1);
+      
+      read(parent[0], &amp;v, 1);
+      if(v==1){
+          printf(&quot;%d: received pong\n&quot;, getpid());
+      }else{
+          exit(1);
+      }
+      close(parent[0]);
+      close(child[1]);
+
+  }
+  
+  exit(0);
+}
+</code></pre>
+<h2 id="primes利用fork出来的进程树对数据进行过滤">primes：利用fork出来的进程树，对数据进行过滤</h2>
+<p>及时关闭用不到的fd</p>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;kernel/param.h&quot;
+#include &quot;user/user.h&quot;
+
+/*
+解题思路：
+buffer的作用是保存这轮不能被筛除的数
+*/
+
+int
+main(int argc, char *argv[])
+{
+
+    int fd[2];
+
+    int buffer[36];
+    int cnt = 0;
+    for (int i = 2; i &lt; 36; i++)
+    {
+        buffer[cnt++] = i;
+    }
+    
+    while (cnt &gt; 0)
+    {   
+        pipe(fd);
+        if(fork() == 0)
+        {
+            close(fd[1]);
+            int base = 0;
+            cnt = -1;
+            int v;
+            while (read(fd[0], &amp;v, sizeof(v)))
+            {
+                if(cnt == -1){
+                    base = v;
+                    cnt = 0;
+                }else if(v % base != 0){
+                    buffer[cnt++] = v;
+                }
+            }
+            close(fd[0]);
+            printf(&quot;prime %d\n&quot;, base);
+        }
+        else
+        {
+            close(fd[0]);
+            for (int i = 0; i &lt; cnt; i++)
+            {
+                write(fd[1], &amp;buffer[i], sizeof(buffer[i]));
+                
+            }
+            close(fd[1]);
+            wait(0);
+            break;  //父进程跳出while循环
+
+        }
+    }
+    
+  
+    
+      
+  
+  exit(0);
+}
+
+</code></pre>
+<h2 id="find利用fstat查看fd的元信息如果是file则拿到文件名如果是directory则读取其中的struct-dirent">find：利用fstat查看fd的元信息，如果是file，则拿到文件名，如果是directory，则读取其中的struct dirent</h2>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
+#include &quot;kernel/fs.h&quot;
+
+// extract b from ./a/b
+void
+extractname(char *path, char *buf)
+{
+    char *p = path + strlen(path);
+    while(*--p != '/'){
+
+    }
+    strcpy(buf, p+1);
+}
+
+void
+find(char *path, char *name)
+{
+  char buf[512], *p;
+  int fd;
+  struct dirent de;
+  struct stat st;
+  if((fd = open(path, 0)) &lt; 0){
+      fprintf(2, &quot;find: cannot open %s\n&quot;, path);
+        return;
+  }
+  //fstat是查看该fd的元信息
+  if(fstat(fd, &amp;st) &lt; 0){
+    fprintf(2, &quot;find: cannot stat %s\n&quot;, path);
+    close(fd);
+    return;
+  }
+  switch(st.type){
+  case T_FILE:
+    extractname(path, buf);
+    if(strcmp(buf, name) == 0){
+        printf(&quot;%s\n&quot;, path);
+    }
+    
+    break;
+
+  case T_DIR:
+    if(strlen(path) + 1 + DIRSIZ + 1 &gt; sizeof buf){
+      printf(&quot;find: path too long\n&quot;);
+      break;
+    }
+    strcpy(buf, path);
+    p = buf+strlen(buf);
+    *p++ = '/';
+    //文件夹也是一个file，从里面会逐个读取文件夹下的内容，每次读一个struct dirent大小
+    while(read(fd, &amp;de, sizeof(de)) == sizeof(de)){
+      if(de.inum == 0)
+        continue;
+    
+      memmove(p, de.name, DIRSIZ);
+      p[DIRSIZ] = 0;
+      if(stat(buf, &amp;st) &lt; 0){
+        printf(&quot;find: cannot stat %s\n&quot;, buf);
+        continue;
+      }
+    //   printf(&quot;debug %s\n&quot;, buf);
+      /* 出现递归
+        debug ./.
+        debug ././.
+        debug ./././.
+        debug ././././.
+      */
+      char *check = buf + strlen(buf);
+      while(*check != '/') check--;
+      check++;
+      if(strcmp(check, &quot;.&quot;) == 0) continue;
+      if(strcmp(check, &quot;..&quot;) == 0) continue;
+
+      find(buf, name);
+    //   printf(&quot;%s %d %d %d\n&quot;, fmtname(buf), st.type, st.ino, st.size);
+    }
+    break;
+  }
+  close(fd);
+
+}
+
+
+int
+main(int argc, char *argv[])
+{
+
+  if(argc &lt; 3){
+    fprintf(2, &quot;find need at least 3 params\n&quot;);
+    exit(1);
+  }
+  find(argv[1], argv[2]);
+  exit(0);
+}
+</code></pre>
+<h2 id="xargs把上一个命令的输出作为下一个命令的输入参数">xargs：把上一个命令的输出作为下一个命令的输入参数</h2>
+<pre><code>$ echo hello too | xargs echo bye
+bye hello too
+</code></pre>
+<p>solution:</p>
+<pre><code class="language-c">
+#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;kernel/param.h&quot;
+#include &quot;user/user.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+  char *args[MAXARG];
+  int ini_arg_num = 0;
+  char buf[256] = {0};
+//   printf(&quot;argc %d\n&quot;, argc);
+  for(int i=1; i&lt;argc; ++i){
+      if(strcmp(argv[i], &quot;-n&quot;) == 0 &amp;&amp; i==1){
+          ++i;
+      }else{
+          args[ini_arg_num++] = argv[i];
+        //   printf(&quot;%d %s\n&quot;, ini_arg_num-1, argv[i]);
+      }
+  }
+  /*
+  这里有问题 无法解析\n
+  $ echo &quot;1\n2&quot; | xargs -n 1 echo line
+    &quot;1\n2&quot;
+    line &quot;1\n2&quot;
+
+  */
+  while(gets( buf, sizeof(buf))){
+      if(strlen(buf) &lt; 1) break;
+    //   printf(&quot;%d\n%s&quot;, strlen(buf), buf);
+      buf[strlen(buf)-1] = 0; //清除gets读入的\n
+    //   printf(&quot;%s\n&quot;, buf);
+      int arg_num = ini_arg_num;
+      char *p = buf;
+      while (*p)
+      {
+          while ((*p == ' ') &amp;&amp; *p) *p++ = 0;
+          if(*p) args[arg_num++] = p;
+          while ((*p != ' ') &amp;&amp; *p) p++;
+      }
+      if(arg_num &gt;= MAXARG) fprintf(2, &quot;too many args\n&quot;);
+      if(arg_num &lt; 1) fprintf(2, &quot;too few args for xargs\n&quot;);
+      args[arg_num] = 0;
+      if(fork() == 0){
+        //   printf(&quot;%s\n&quot;, args[0]);
+        //   printf(&quot;%s %s %s\n&quot;, args[1], args[2], args[3]);
+        exec(args[0], args);
+        exit(0);
+      }else{
+          wait(0);
+      }
+      
+  }
+  exit(0);
+}
+
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[C++ unique_lock future condition_variable]]></title>
         <id>https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/</id>

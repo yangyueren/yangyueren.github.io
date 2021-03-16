@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>C++ unique_lock future condition_variable | 木头人</title>
+<title>MIT6.S081 util | 木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="C++ unique_lock future condition_variable | 木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="MIT6.S081 util | 木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="C++ unique_lock future condition_variable" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/" />
+  <meta property="og:description" content="MIT6.S081 util" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/mit6s081-util/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="木头人" />
@@ -151,15 +151,13 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/c4spScV9y/" class="tag">多线程</a>
-                
-                <a href="https://yangyueren.github.io/tag/1YnKKTmmU/" class="tag">C++</a>
+                <a href="https://yangyueren.github.io/tag/NlD7320KL/" class="tag">MIT6.S081</a>
                 
               </span>
-              <h1>C++ unique_lock future condition_variable</h1>
+              <h1>MIT6.S081 util</h1>
               <span class="meta">
                 Posted on
-                2021-02-27，5 min read
+                2021-03-16，7 min read
               </span>
             </div>
           
@@ -174,201 +172,320 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <p>多线程的一些基础语法。</p>
-<!-- more -->
-<h2 id="stdunique_lock">std::unique_lock</h2>
-<p>使用std::unique_lock 比std::lock_guard更加灵活：std::lock_guard 不能显式的调用 lock 和 unlock，而 std::unique_lock 可以在声明后的任意位 置调用，可以缩小锁的作用范围，提供更高的并发度。</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
+          <p>第一个lab是熟悉xv6的system calls</p>
+<h2 id="sleep">sleep：</h2>
+<p>easy难度<br>
+在makefile的UPROGS添加$U/_sleep<br>
+在user/sleep.c中写以下代码：</p>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
 
-using namespace std;
-int v = 1;
-void critical_sectin(int change_v){
-    static mutex mtx;
-    std::this_thread::sleep_for(std::chrono::milliseconds(change_v));
-    std::unique_lock&lt;std::mutex&gt; lock(mtx);
-    v = change_v;
-    std::cout &lt;&lt; v &lt;&lt; std::endl;
-
-    lock.unlock();
-
-    change_v++;
-
-    lock.lock();
-    v = change_v;
-    std::cout &lt;&lt; v &lt;&lt; std::endl;
-
-}
-int main(){
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::thread t1(critical_sectin, 590);
-    std::thread t2(critical_sectin, 66);
-    t1.join();
-    t2.join();
-    return 0;
+int
+main(int argc, char *argv[])
+{
+  if(argc != 2){
+      fprintf(2, &quot;sleep needs an int as param.\n&quot;);
+      exit(1);
+  }
+  int i = atoi(argv[1]);
+  sleep(i);
+  
+  exit(0);
 }
 </code></pre>
-<h2 id="stdfuture-对线程的返回结果进行封装">std::future 对线程的返回结果进行封装</h2>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-using namespace std;
+<h2 id="pingpong利用pipe在父子进程间通信利用子进程会继承父进程的打开文件符">pingpong：利用pipe在父子进程间通信（利用子进程会继承父进程的打开文件符）</h2>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
 
-int main(){
-    std::packaged_task&lt;int(int)&gt; task([](int a) -&gt; int{
-        std::cout &lt;&lt; &quot;inside packaged_task &quot; &lt;&lt; a &lt;&lt; std::endl;
-        return a;
-    });
-    std::future&lt;int&gt; result = task.get_future();
+int
+main(int argc, char *argv[])
+{
+  if(argc &gt; 1){
+      fprintf(2, &quot;ping-pong doesn't need params\n&quot;);
+      exit(1);
+  }
+  char v = 0;
+  
+  int parent[2];
+  int child[2];
+  pipe(parent);
+  pipe(child);
+  if(fork() == 0){
+      //child
+      close(child[1]);
+      close(parent[0]);
+      read(child[0], &amp;v, 1);
+      
+      if(v==0){
+          printf(&quot;%d: received ping\n&quot;, getpid());
+      }else{
+          exit(1);
+      }
+      v = 1;
+      write(parent[1], &amp;v, 1);
+      close(child[0]);
+      close(parent[1]);
 
-    std::thread(std::move(task), 8).detach(); //创建thread，传入package_task的参数
-    
-    result.wait();
-    std::cout &lt;&lt; result.get() &lt;&lt; std::endl;
+  }else{
+      //parent
+      close(child[0]);
+      close(parent[1]);
+      write(child[1], &amp;v, 1);
+      
+      read(parent[0], &amp;v, 1);
+      if(v==1){
+          printf(&quot;%d: received pong\n&quot;, getpid());
+      }else{
+          exit(1);
+      }
+      close(parent[0]);
+      close(child[1]);
 
-    
-    return 0;
+  }
+  
+  exit(0);
 }
 </code></pre>
-<h2 id="stdcondition_variable">std::condition_variable</h2>
-<p>用于同步，解决死锁</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-#include &lt;condition_variable&gt;
-#include &lt;queue&gt;
-#include &lt;string&gt;
-using namespace std;
+<h2 id="primes利用fork出来的进程树对数据进行过滤">primes：利用fork出来的进程树，对数据进行过滤</h2>
+<p>及时关闭用不到的fd</p>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;kernel/param.h&quot;
+#include &quot;user/user.h&quot;
 
-int main(){
-    std::condition_variable cv;
-    std::mutex mtx;
-    std::queue&lt;int&gt; produced_nums;
-    bool notify = false;
-    auto producer = [&amp;](){
-        for (int i=1; ; i++){
-            std::this_thread::sleep_for(std::chrono::milliseconds(900));
-            std::unique_lock&lt;mutex&gt; lock(mtx);
+/*
+解题思路：
+buffer的作用是保存这轮不能被筛除的数
+*/
 
-            std::cout &lt;&lt; &quot;producing &quot; &lt;&lt; i &lt;&lt; std::endl;
+int
+main(int argc, char *argv[])
+{
 
-            produced_nums.push(i);
-            notify = true;
-            cv.notify_all();
+    int fd[2];
+
+    int buffer[36];
+    int cnt = 0;
+    for (int i = 2; i &lt; 36; i++)
+    {
+        buffer[cnt++] = i;
+    }
+    
+    while (cnt &gt; 0)
+    {   
+        pipe(fd);
+        if(fork() == 0)
+        {
+            close(fd[1]);
+            int base = 0;
+            cnt = -1;
+            int v;
+            while (read(fd[0], &amp;v, sizeof(v)))
+            {
+                if(cnt == -1){
+                    base = v;
+                    cnt = 0;
+                }else if(v % base != 0){
+                    buffer[cnt++] = v;
+                }
+            }
+            close(fd[0]);
+            printf(&quot;prime %d\n&quot;, base);
+        }
+        else
+        {
+            close(fd[0]);
+            for (int i = 0; i &lt; cnt; i++)
+            {
+                write(fd[1], &amp;buffer[i], sizeof(buffer[i]));
+                
+            }
+            close(fd[1]);
+            wait(0);
+            break;  //父进程跳出while循环
 
         }
-    };
-    auto consumer = [&amp;](int csid){
-        while (true){
-            unique_lock&lt;mutex&gt; lock(mtx);
-
-            while (!notify){
-                cv.wait(lock);
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-            std::cout &lt;&lt; csid &lt;&lt; &quot; lock success&quot; &lt;&lt; std::endl;
-            if (!produced_nums.empty()){
-                auto result = produced_nums.front();
-                produced_nums.pop();
-                std::cout &lt;&lt; &quot;consumer &quot; &lt;&lt; csid &lt;&lt; &quot; : &quot; &lt;&lt; result &lt;&lt; &quot; &quot; &lt;&lt; produced_nums.size() &lt;&lt; std::endl;
-            }
-            notify = false;
-
-        }
-    };
-
-    thread produce(producer);
-    vector&lt;thread&gt; pool;
-    for (int i = 0; i &lt; 10; ++i) {
-        pool.push_back(thread(consumer, i));
     }
+    
+  
+    
+      
+  
+  exit(0);
+}
 
-    produce.join();
-    for (int i = 0; i &lt; 10; ++i) {
-        pool[i].join();
+</code></pre>
+<h2 id="find利用fstat查看fd的元信息如果是file则拿到文件名如果是directory则读取其中的struct-dirent">find：利用fstat查看fd的元信息，如果是file，则拿到文件名，如果是directory，则读取其中的struct dirent</h2>
+<pre><code>#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;user/user.h&quot;
+#include &quot;kernel/fs.h&quot;
+
+// extract b from ./a/b
+void
+extractname(char *path, char *buf)
+{
+    char *p = path + strlen(path);
+    while(*--p != '/'){
+
     }
+    strcpy(buf, p+1);
+}
 
-    return 0;
+void
+find(char *path, char *name)
+{
+  char buf[512], *p;
+  int fd;
+  struct dirent de;
+  struct stat st;
+  if((fd = open(path, 0)) &lt; 0){
+      fprintf(2, &quot;find: cannot open %s\n&quot;, path);
+        return;
+  }
+  //fstat是查看该fd的元信息
+  if(fstat(fd, &amp;st) &lt; 0){
+    fprintf(2, &quot;find: cannot stat %s\n&quot;, path);
+    close(fd);
+    return;
+  }
+  switch(st.type){
+  case T_FILE:
+    extractname(path, buf);
+    if(strcmp(buf, name) == 0){
+        printf(&quot;%s\n&quot;, path);
+    }
+    
+    break;
+
+  case T_DIR:
+    if(strlen(path) + 1 + DIRSIZ + 1 &gt; sizeof buf){
+      printf(&quot;find: path too long\n&quot;);
+      break;
+    }
+    strcpy(buf, path);
+    p = buf+strlen(buf);
+    *p++ = '/';
+    //文件夹也是一个file，从里面会逐个读取文件夹下的内容，每次读一个struct dirent大小
+    while(read(fd, &amp;de, sizeof(de)) == sizeof(de)){
+      if(de.inum == 0)
+        continue;
+    
+      memmove(p, de.name, DIRSIZ);
+      p[DIRSIZ] = 0;
+      if(stat(buf, &amp;st) &lt; 0){
+        printf(&quot;find: cannot stat %s\n&quot;, buf);
+        continue;
+      }
+    //   printf(&quot;debug %s\n&quot;, buf);
+      /* 出现递归
+        debug ./.
+        debug ././.
+        debug ./././.
+        debug ././././.
+      */
+      char *check = buf + strlen(buf);
+      while(*check != '/') check--;
+      check++;
+      if(strcmp(check, &quot;.&quot;) == 0) continue;
+      if(strcmp(check, &quot;..&quot;) == 0) continue;
+
+      find(buf, name);
+    //   printf(&quot;%s %d %d %d\n&quot;, fmtname(buf), st.type, st.ino, st.size);
+    }
+    break;
+  }
+  close(fd);
+
+}
+
+
+int
+main(int argc, char *argv[])
+{
+
+  if(argc &lt; 3){
+    fprintf(2, &quot;find need at least 3 params\n&quot;);
+    exit(1);
+  }
+  find(argv[1], argv[2]);
+  exit(0);
 }
 </code></pre>
-<p>condition_variable需要mutex和condition两个变量，在cv.wait(lock)后，需要检查条件是否满足（因为存在假唤醒）。</p>
-<p>consumer中wait被signal之后的过程：</p>
-<p>首先要拿到lock，然后cv.wait(lock, <a href=""></a>{return is_ready;});之后，线程开始休眠，被加入一个唤醒队列，同时释放锁。<br>
-cv.notify_all()之后，所有在wait的consumer线程被唤醒，然后开始lock，注意，如果mutex此时是被locked的，这些线程也不会再休眠了，会一直尝试加锁，直到加锁成功，进入临界区。</p>
-<p>官方样例：</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;string&gt;
-#include &lt;thread&gt;
-#include &lt;mutex&gt;
-#include &lt;condition_variable&gt;
- 
-std::mutex m;
-std::condition_variable cv;
-std::string data;
-bool ready = false;
-bool processed = false;
- 
-void worker_thread()
-{
-    // Wait until main() sends data
-    std::unique_lock&lt;std::mutex&gt; lk(m);
-    cv.wait(lk, []{return ready;});
- 
-    // after the wait, we own the lock.
-    std::cout &lt;&lt; &quot;Worker thread is processing data\n&quot;;
-    data += &quot; after processing&quot;;
- 
-    // Send data back to main()
-    processed = true;
-    std::cout &lt;&lt; &quot;Worker thread signals data processing completed\n&quot;;
- 
-    // Manual unlocking is done before notifying, to avoid waking up
-    // the waiting thread only to block again (see notify_one for details)
-    lk.unlock();
-    cv.notify_one();
-}
- 
-int main()
-{
-    std::thread worker(worker_thread);
- 
-    data = &quot;Example data&quot;;
-    // send data to the worker thread
-    {
-        std::lock_guard&lt;std::mutex&gt; lk(m);
-        ready = true;
-        std::cout &lt;&lt; &quot;main() signals data ready for processing\n&quot;;
-    }
-    cv.notify_one();
- 
-    // wait for the worker
-    {
-        std::unique_lock&lt;std::mutex&gt; lk(m);
-        cv.wait(lk, []{return processed;});
-    }
-    std::cout &lt;&lt; &quot;Back in main(), data = &quot; &lt;&lt; data &lt;&lt; '\n';
- 
-    worker.join();
-}
+<h2 id="xargs把上一个命令的输出作为下一个命令的输入参数">xargs：把上一个命令的输出作为下一个命令的输入参数</h2>
+<pre><code>$ echo hello too | xargs echo bye
+bye hello too
 </code></pre>
-<p>output:</p>
-<pre><code class="language-markdown">main() signals data ready for processing
-Worker thread is processing data
-Worker thread signals data processing completed
-Back in main(), data = Example data after processing
+<p>solution:</p>
+<pre><code class="language-c">
+#include &quot;kernel/types.h&quot;
+#include &quot;kernel/stat.h&quot;
+#include &quot;kernel/param.h&quot;
+#include &quot;user/user.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+  char *args[MAXARG];
+  int ini_arg_num = 0;
+  char buf[256] = {0};
+//   printf(&quot;argc %d\n&quot;, argc);
+  for(int i=1; i&lt;argc; ++i){
+      if(strcmp(argv[i], &quot;-n&quot;) == 0 &amp;&amp; i==1){
+          ++i;
+      }else{
+          args[ini_arg_num++] = argv[i];
+        //   printf(&quot;%d %s\n&quot;, ini_arg_num-1, argv[i]);
+      }
+  }
+  /*
+  这里有问题 无法解析\n
+  $ echo &quot;1\n2&quot; | xargs -n 1 echo line
+    &quot;1\n2&quot;
+    line &quot;1\n2&quot;
+
+  */
+  while(gets( buf, sizeof(buf))){
+      if(strlen(buf) &lt; 1) break;
+    //   printf(&quot;%d\n%s&quot;, strlen(buf), buf);
+      buf[strlen(buf)-1] = 0; //清除gets读入的\n
+    //   printf(&quot;%s\n&quot;, buf);
+      int arg_num = ini_arg_num;
+      char *p = buf;
+      while (*p)
+      {
+          while ((*p == ' ') &amp;&amp; *p) *p++ = 0;
+          if(*p) args[arg_num++] = p;
+          while ((*p != ' ') &amp;&amp; *p) p++;
+      }
+      if(arg_num &gt;= MAXARG) fprintf(2, &quot;too many args\n&quot;);
+      if(arg_num &lt; 1) fprintf(2, &quot;too few args for xargs\n&quot;);
+      args[arg_num] = 0;
+      if(fork() == 0){
+        //   printf(&quot;%s\n&quot;, args[0]);
+        //   printf(&quot;%s %s %s\n&quot;, args[1], args[2], args[3]);
+        exec(args[0], args);
+        exit(0);
+      }else{
+          wait(0);
+      }
+      
+  }
+  exit(0);
+}
+
 </code></pre>
 
           <div class="toc-container"><ul class="markdownIt-TOC">
 <li>
 <ul>
-<li><a href="#stdunique_lock">std::unique_lock</a></li>
-<li><a href="#stdfuture-%E5%AF%B9%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%BF%94%E5%9B%9E%E7%BB%93%E6%9E%9C%E8%BF%9B%E8%A1%8C%E5%B0%81%E8%A3%85">std::future 对线程的返回结果进行封装</a></li>
-<li><a href="#stdcondition_variable">std::condition_variable</a></li>
+<li><a href="#sleep">sleep：</a></li>
+<li><a href="#pingpong%E5%88%A9%E7%94%A8pipe%E5%9C%A8%E7%88%B6%E5%AD%90%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E5%88%A9%E7%94%A8%E5%AD%90%E8%BF%9B%E7%A8%8B%E4%BC%9A%E7%BB%A7%E6%89%BF%E7%88%B6%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%89%93%E5%BC%80%E6%96%87%E4%BB%B6%E7%AC%A6">pingpong：利用pipe在父子进程间通信（利用子进程会继承父进程的打开文件符）</a></li>
+<li><a href="#primes%E5%88%A9%E7%94%A8fork%E5%87%BA%E6%9D%A5%E7%9A%84%E8%BF%9B%E7%A8%8B%E6%A0%91%E5%AF%B9%E6%95%B0%E6%8D%AE%E8%BF%9B%E8%A1%8C%E8%BF%87%E6%BB%A4">primes：利用fork出来的进程树，对数据进行过滤</a></li>
+<li><a href="#find%E5%88%A9%E7%94%A8fstat%E6%9F%A5%E7%9C%8Bfd%E7%9A%84%E5%85%83%E4%BF%A1%E6%81%AF%E5%A6%82%E6%9E%9C%E6%98%AFfile%E5%88%99%E6%8B%BF%E5%88%B0%E6%96%87%E4%BB%B6%E5%90%8D%E5%A6%82%E6%9E%9C%E6%98%AFdirectory%E5%88%99%E8%AF%BB%E5%8F%96%E5%85%B6%E4%B8%AD%E7%9A%84struct-dirent">find：利用fstat查看fd的元信息，如果是file，则拿到文件名，如果是directory，则读取其中的struct dirent</a></li>
+<li><a href="#xargs%E6%8A%8A%E4%B8%8A%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E8%BE%93%E5%87%BA%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E4%B8%AA%E5%91%BD%E4%BB%A4%E7%9A%84%E8%BE%93%E5%85%A5%E5%8F%82%E6%95%B0">xargs：把上一个命令的输出作为下一个命令的输入参数</a></li>
 </ul>
 </li>
 </ul>
@@ -376,9 +493,9 @@ Back in main(), data = Example data after processing
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/c-you-zhi-yin-yong/">
+            <a href="https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/">
               <span class="post-title">
-                C++ T&amp;&amp;推导T的类型&rarr;
+                C++ unique_lock future condition_variable&rarr;
               </span>
             </a>
           </p>

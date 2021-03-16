@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>C++ unique_lock future condition_variable | 木头人</title>
+<title>MIT6.S081 syscall | 木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="C++ unique_lock future condition_variable | 木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="MIT6.S081 syscall | 木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="C++ unique_lock future condition_variable" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/c-unique_lock-future-condition_variable/" />
+  <meta property="og:description" content="MIT6.S081 syscall" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/mit6s081-syscall/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="木头人" />
@@ -151,15 +151,13 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/c4spScV9y/" class="tag">多线程</a>
-                
-                <a href="https://yangyueren.github.io/tag/1YnKKTmmU/" class="tag">C++</a>
+                <a href="https://yangyueren.github.io/tag/NlD7320KL/" class="tag">MIT6.S081</a>
                 
               </span>
-              <h1>C++ unique_lock future condition_variable</h1>
+              <h1>MIT6.S081 syscall</h1>
               <span class="meta">
                 Posted on
-                2021-02-27，5 min read
+                2021-03-16，5 min read
               </span>
             </div>
           
@@ -174,201 +172,214 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <p>多线程的一些基础语法。</p>
-<!-- more -->
-<h2 id="stdunique_lock">std::unique_lock</h2>
-<p>使用std::unique_lock 比std::lock_guard更加灵活：std::lock_guard 不能显式的调用 lock 和 unlock，而 std::unique_lock 可以在声明后的任意位 置调用，可以缩小锁的作用范围，提供更高的并发度。</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
-
-using namespace std;
-int v = 1;
-void critical_sectin(int change_v){
-    static mutex mtx;
-    std::this_thread::sleep_for(std::chrono::milliseconds(change_v));
-    std::unique_lock&lt;std::mutex&gt; lock(mtx);
-    v = change_v;
-    std::cout &lt;&lt; v &lt;&lt; std::endl;
-
-    lock.unlock();
-
-    change_v++;
-
-    lock.lock();
-    v = change_v;
-    std::cout &lt;&lt; v &lt;&lt; std::endl;
-
+          <h2 id="syscall的原理">syscall的原理：</h2>
+<p>在shell中，当输入某个命令，比如sysinfo，shell fork出一个进程调用sysinfo.c处理sysinfo命令，此时还处于user space；在sysinfo.c的main函数中，会进行系统调用，比如系统调用sysinfo，read，kill等，这些系统调用是通过usys.pl脚本，把sysinfo通过ecall跳转到kernel的部分。</p>
+<pre><code>sub entry {
+    my $name = shift;
+    print &quot;.global $name\n&quot;;
+    print &quot;${name}:\n&quot;;
+    print &quot; li a7, SYS_${name}\n&quot;;
+    print &quot; ecall\n&quot;;
+    print &quot; ret\n&quot;;
 }
-int main(){
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::thread t1(critical_sectin, 590);
-    std::thread t2(critical_sectin, 66);
-    t1.join();
-    t2.join();
-    return 0;
+	
+entry(&quot;fork&quot;);
+entry(&quot;exit&quot;);
+entry(&quot;wait&quot;);
+entry(&quot;pipe&quot;);
+entry(&quot;sysinfo&quot;);
+</code></pre>
+<p>在kernel的syscall里面查SYS_sysinfo的函数位置，如何查找位置呢，kernel/syscall.c有一个</p>
+<pre><code>static uint64 (*syscalls[])(void) = {
+[SYS_fork]    sys_fork,
+[SYS_exit]    sys_exit,
+[SYS_wait]    sys_wait,
+[SYS_pipe]    sys_pipe
 }
 </code></pre>
-<h2 id="stdfuture-对线程的返回结果进行封装">std::future 对线程的返回结果进行封装</h2>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-using namespace std;
-
-int main(){
-    std::packaged_task&lt;int(int)&gt; task([](int a) -&gt; int{
-        std::cout &lt;&lt; &quot;inside packaged_task &quot; &lt;&lt; a &lt;&lt; std::endl;
-        return a;
-    });
-    std::future&lt;int&gt; result = task.get_future();
-
-    std::thread(std::move(task), 8).detach(); //创建thread，传入package_task的参数
-    
-    result.wait();
-    std::cout &lt;&lt; result.get() &lt;&lt; std::endl;
-
-    
-    return 0;
-}
-</code></pre>
-<h2 id="stdcondition_variable">std::condition_variable</h2>
-<p>用于同步，解决死锁</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;mutex&gt;
-#include &lt;thread&gt;
-#include &lt;future&gt;
-#include &lt;condition_variable&gt;
-#include &lt;queue&gt;
-#include &lt;string&gt;
-using namespace std;
-
-int main(){
-    std::condition_variable cv;
-    std::mutex mtx;
-    std::queue&lt;int&gt; produced_nums;
-    bool notify = false;
-    auto producer = [&amp;](){
-        for (int i=1; ; i++){
-            std::this_thread::sleep_for(std::chrono::milliseconds(900));
-            std::unique_lock&lt;mutex&gt; lock(mtx);
-
-            std::cout &lt;&lt; &quot;producing &quot; &lt;&lt; i &lt;&lt; std::endl;
-
-            produced_nums.push(i);
-            notify = true;
-            cv.notify_all();
-
-        }
-    };
-    auto consumer = [&amp;](int csid){
-        while (true){
-            unique_lock&lt;mutex&gt; lock(mtx);
-
-            while (!notify){
-                cv.wait(lock);
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-            std::cout &lt;&lt; csid &lt;&lt; &quot; lock success&quot; &lt;&lt; std::endl;
-            if (!produced_nums.empty()){
-                auto result = produced_nums.front();
-                produced_nums.pop();
-                std::cout &lt;&lt; &quot;consumer &quot; &lt;&lt; csid &lt;&lt; &quot; : &quot; &lt;&lt; result &lt;&lt; &quot; &quot; &lt;&lt; produced_nums.size() &lt;&lt; std::endl;
-            }
-            notify = false;
-
-        }
-    };
-
-    thread produce(producer);
-    vector&lt;thread&gt; pool;
-    for (int i = 0; i &lt; 10; ++i) {
-        pool.push_back(thread(consumer, i));
-    }
-
-    produce.join();
-    for (int i = 0; i &lt; 10; ++i) {
-        pool[i].join();
-    }
-
-    return 0;
-}
-</code></pre>
-<p>condition_variable需要mutex和condition两个变量，在cv.wait(lock)后，需要检查条件是否满足（因为存在假唤醒）。</p>
-<p>consumer中wait被signal之后的过程：</p>
-<p>首先要拿到lock，然后cv.wait(lock, <a href=""></a>{return is_ready;});之后，线程开始休眠，被加入一个唤醒队列，同时释放锁。<br>
-cv.notify_all()之后，所有在wait的consumer线程被唤醒，然后开始lock，注意，如果mutex此时是被locked的，这些线程也不会再休眠了，会一直尝试加锁，直到加锁成功，进入临界区。</p>
-<p>官方样例：</p>
-<pre><code>#include &lt;iostream&gt;
-#include &lt;string&gt;
-#include &lt;thread&gt;
-#include &lt;mutex&gt;
-#include &lt;condition_variable&gt;
- 
-std::mutex m;
-std::condition_variable cv;
-std::string data;
-bool ready = false;
-bool processed = false;
- 
-void worker_thread()
+<p>可以通过SYSinfo找到对应的sys_sysinfo kernel中的函数，进行操作。</p>
+<h2 id="system-call-tracing">System call tracing</h2>
+<p>添加一个trace的系统调用</p>
+<p>sysproc.c</p>
+<pre><code>uint64
+sys_trace(void)
 {
-    // Wait until main() sends data
-    std::unique_lock&lt;std::mutex&gt; lk(m);
-    cv.wait(lk, []{return ready;});
- 
-    // after the wait, we own the lock.
-    std::cout &lt;&lt; &quot;Worker thread is processing data\n&quot;;
-    data += &quot; after processing&quot;;
- 
-    // Send data back to main()
-    processed = true;
-    std::cout &lt;&lt; &quot;Worker thread signals data processing completed\n&quot;;
- 
-    // Manual unlocking is done before notifying, to avoid waking up
-    // the waiting thread only to block again (see notify_one for details)
-    lk.unlock();
-    cv.notify_one();
-}
- 
-int main()
-{
-    std::thread worker(worker_thread);
- 
-    data = &quot;Example data&quot;;
-    // send data to the worker thread
-    {
-        std::lock_guard&lt;std::mutex&gt; lk(m);
-        ready = true;
-        std::cout &lt;&lt; &quot;main() signals data ready for processing\n&quot;;
-    }
-    cv.notify_one();
- 
-    // wait for the worker
-    {
-        std::unique_lock&lt;std::mutex&gt; lk(m);
-        cv.wait(lk, []{return processed;});
-    }
-    std::cout &lt;&lt; &quot;Back in main(), data = &quot; &lt;&lt; data &lt;&lt; '\n';
- 
-    worker.join();
+  int mask;
+  if(argint(0, &amp;mask) &lt; 0)
+    return -1;
+  myproc()-&gt;trace_mask = mask; //进程信息中记录mask
+  return 0;
 }
 </code></pre>
-<p>output:</p>
-<pre><code class="language-markdown">main() signals data ready for processing
-Worker thread is processing data
-Worker thread signals data processing completed
-Back in main(), data = Example data after processing
+<p>proc.h</p>
+<pre><code>
+// Per-process state
+struct proc {
+  struct spinlock lock;
+
+  // p-&gt;lock must be held when using these:
+  enum procstate state;        // Process state
+  struct proc *parent;         // Parent process
+  void *chan;                  // If non-zero, sleeping on chan
+  int killed;                  // If non-zero, have been killed
+  int xstate;                  // Exit status to be returned to parent's wait
+  int pid;                     // Process ID
+
+  // these are private to the process, so p-&gt;lock need not be held.
+  uint64 kstack;               // Virtual address of kernel stack
+  uint64 sz;                   // Size of process memory (bytes)
+  pagetable_t pagetable;       // User page table
+  struct trapframe *trapframe; // data page for trampoline.S
+  struct context context;      // swtch() here to run process
+  struct file *ofile[NOFILE];  // Open files
+  struct inode *cwd;           // Current directory
+  char name[16];               // Process name (debugging)
+  int trace_mask;               //记录trace mask
+
+};
+</code></pre>
+<p>syscall.c</p>
+<pre><code>
+static uint64 (*syscalls[])(void) = {
+[SYS_fork]    sys_fork,
+...
+[SYS_sysinfo] sys_sysinfo,
+};
+
+
+char* syscall_name[23] = {
+        &quot;0&quot;,
+        &quot;syscall fork&quot;,  
+        &quot;syscall exit&quot;,  
+        &quot;syscall wait&quot;,  
+        &quot;syscall pipe&quot;,  
+        &quot;syscall read&quot;,
+        &quot;syscall kill&quot;,
+        &quot;syscall exec&quot;,
+        &quot;syscall fstat&quot;,
+        &quot;syscall chdir&quot;,
+        &quot;syscall dup&quot;,
+        &quot;syscall getpid&quot;,
+        &quot;syscall sbrk&quot;,
+        &quot;syscall sleep&quot;,
+        &quot;syscall uptime&quot;,
+        &quot;syscall open&quot;,
+        &quot;syscall write&quot;,
+        &quot;syscall mknod&quot;,
+        &quot;syscall unlink&quot;,
+        &quot;syscall link&quot;,
+        &quot;syscall mkdir&quot;,
+        &quot;syscall close&quot;,
+        &quot;syscall trace&quot;,
+};
+void
+syscall(void)
+{
+
+  int num;
+  struct proc *p = myproc();
+
+  num = p-&gt;trapframe-&gt;a7;
+  if(num &gt; 0 &amp;&amp; num &lt; NELEM(syscalls) &amp;&amp; syscalls[num]) {
+
+    p-&gt;trapframe-&gt;a0 = syscalls[num]();
+    int trace_mask = p-&gt;trace_mask;
+	//判断是否对该syscall显示trace
+    if(trace_mask &gt;&gt; num &amp; 0x1){
+        printf(&quot;%d: %s -&gt; %d\n&quot;, p-&gt;pid, syscall_name[num], p-&gt;trapframe-&gt;a0);
+    }
+    
+  } else {
+    printf(&quot;%d %s: unknown sys call %d\n&quot;,
+            p-&gt;pid, p-&gt;name, num);
+    p-&gt;trapframe-&gt;a0 = -1;
+  }
+}
+
+
+
+</code></pre>
+<p>处理子进程，让mask能够继承<br>
+proc.c</p>
+<pre><code class="language-c">int
+fork(void)
+{
+  int i, pid;
+  struct proc *np;
+  struct proc *p = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Copy user memory from parent to child.
+  if(uvmcopy(p-&gt;pagetable, np-&gt;pagetable, p-&gt;sz) &lt; 0){
+    freeproc(np);
+    release(&amp;np-&gt;lock);
+    return -1;
+  }
+  np-&gt;sz = p-&gt;sz;
+
+  np-&gt;parent = p;
+
+  // copy saved user registers.
+  *(np-&gt;trapframe) = *(p-&gt;trapframe);
+
+  // Cause fork to return 0 in the child.
+  np-&gt;trapframe-&gt;a0 = 0;
+
+  // increment reference counts on open file descriptors.
+  for(i = 0; i &lt; NOFILE; i++)
+    if(p-&gt;ofile[i])
+      np-&gt;ofile[i] = filedup(p-&gt;ofile[i]);
+  np-&gt;cwd = idup(p-&gt;cwd);
+
+  safestrcpy(np-&gt;name, p-&gt;name, sizeof(p-&gt;name));
+
+  pid = np-&gt;pid;
+
+  np-&gt;state = RUNNABLE;
+
+  np-&gt;trace_mask = p-&gt;trace_mask; //传递trace_mask
+
+  release(&amp;np-&gt;lock);
+
+  return pid;
+}
+</code></pre>
+<h2 id="sysinfo">Sysinfo</h2>
+<p>打印出空闲的内存和未使用的进程<br>
+· 如何获取空闲内存：遍历kmem.freelist，每个元素是一个page<br>
+· 如何获取未使用的进程：遍历proc.c中的struct proc proc[NPROC];<br>
+· 如何将上述信息从内核传递到user space：copyout</p>
+<p>sysproc.c</p>
+<pre><code class="language-c">
+uint64
+sys_sysinfo(void)
+{
+  struct sysinfo info;
+  uint64 addr;
+  // 获取用户态传入的sysinfo结构体
+  if (argaddr(0, &amp;addr) &lt; 0)
+    return -1;
+  struct proc* p = myproc();
+  info.freemem = free_memory();
+  info.nproc = proc_unused_num();
+  
+  //copyout 传入user pagetable，info结构体的user space地址，把kernel中的info copy过去
+  if (copyout(p-&gt;pagetable, addr, (char*)&amp;info, sizeof(info)) &lt; 0)
+    return -1;
+  return 0;
+}
 </code></pre>
 
           <div class="toc-container"><ul class="markdownIt-TOC">
 <li>
 <ul>
-<li><a href="#stdunique_lock">std::unique_lock</a></li>
-<li><a href="#stdfuture-%E5%AF%B9%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%BF%94%E5%9B%9E%E7%BB%93%E6%9E%9C%E8%BF%9B%E8%A1%8C%E5%B0%81%E8%A3%85">std::future 对线程的返回结果进行封装</a></li>
-<li><a href="#stdcondition_variable">std::condition_variable</a></li>
+<li><a href="#syscall%E7%9A%84%E5%8E%9F%E7%90%86">syscall的原理：</a></li>
+<li><a href="#system-call-tracing">System call tracing</a></li>
+<li><a href="#sysinfo">Sysinfo</a></li>
 </ul>
 </li>
 </ul>
@@ -376,9 +387,9 @@ Back in main(), data = Example data after processing
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/c-you-zhi-yin-yong/">
+            <a href="https://yangyueren.github.io/post/mit6s081-util/">
               <span class="post-title">
-                C++ T&amp;&amp;推导T的类型&rarr;
+                MIT6.S081 util&rarr;
               </span>
             </a>
           </p>
