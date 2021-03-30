@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
-    <title>木头人</title>
-    <updated>2021-03-30T09:53:54.857Z</updated>
+    <title>一只木头人</title>
+    <updated>2021-03-30T09:54:46.737Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
     <subtitle>每日一记</subtitle>
     <logo>https://yangyueren.github.io/images/avatar.png</logo>
     <icon>https://yangyueren.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2021, 木头人</rights>
+    <rights>All rights reserved 2021, 一只木头人</rights>
     <entry>
         <title type="html"><![CDATA[2021年3月晨读记录]]></title>
         <id>https://yangyueren.github.io/post/2021-nian-3-yue-chen-du-ji-lu/</id>
