@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>ES使用过程中遇到的坑 | 木头人</title>
+<title>2021年3月晨读记录 | 木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="ES使用过程中遇到的坑 | 木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="2021年3月晨读记录 | 木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="ES使用过程中遇到的坑" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/2/" />
+  <meta property="og:description" content="2021年3月晨读记录" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/2021-nian-3-yue-chen-du-ji-lu/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="木头人" />
@@ -151,17 +151,13 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/-X48vvFK4/" class="tag">Java</a>
-                
-                <a href="https://yangyueren.github.io/tag/G8d84sNBoy/" class="tag">Sprint boot</a>
-                
-                <a href="https://yangyueren.github.io/tag/6keKeZ9_mG/" class="tag">Elasticsearch</a>
+                <a href="https://yangyueren.github.io/tag/Sq_CVk1xj/" class="tag">晨读</a>
                 
               </span>
-              <h1>ES使用过程中遇到的坑</h1>
+              <h1>2021年3月晨读记录</h1>
               <span class="meta">
                 Posted on
-                2019-07-21，5 min read
+                2021-03-30，7 min read
               </span>
             </div>
           
@@ -176,60 +172,93 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <p>这是大三暑假完成的一个基于Elasticsearch的搜索引擎的心得篇，十五天的时间遇到了太多的坑，在此做记录。</p>
-<!-- more -->
-<h2 id="深度搜索引擎体会">深度搜索引擎体会</h2>
-<hr>
-<pre><code>从7月5号到7月19号，历时十五天的课程结束了，深深的松了一口气，可以缓解一下身心的压力。
-这次的项目，是这三年中做的最认真的一次，从5号到18号，每天晚上两点多睡，八点多起床吃早饭来机房，这门课让我半年来不早起不吃早饭的人，养成了吃早饭的习惯，每天来机房时手机的电量有90%，晚上回去的时候还能够剩下65%，每天的上班的六个小时，不熬夜是不可能的，每天晚上都在熬夜补充新的功能，一点点从0到1搭建起自己的系统，用了6台服务器，部署了ES的集群，成果颇丰。
-</code></pre>
-<p>以上是一些偏离主题的碎碎念，以下是正文。</p>
-<p>我们此次项目做的是深度搜索引擎，爬取了小鸡词典、微博、b站等方面的数据，将数据清洗后存到Elasticsearch中，为了充分发挥ES的优势，我使用了三台服务器用来跑ES，一台服务器跑后端程序，另外还有两台图片搜索引擎的服务器，由队友负责搭建。</p>
-<p>这个项目的简介可以在此<a href="https://github.com/yangyueren/ChaggieSearchEngine">github</a>仓库中找到，在此不做赘述，本文着重讲述遇到的问题。</p>
-<p>首先是Elasticsearch版本的问题，7.2的版本对java Springboot的支持太不友好了，maven里面找不到对7.2版本的ES的repository的插件，所以浪费了一天的时间在这个上面，期间我更换过到2.x的版本和5.x的版本，发现都不如人意，感谢其他组同学的支持，提供了解决思路，使用6.4的版本，最终解决问题。</p>
-<p>在ES部署过程中，我一开始就是部署成了集群的状态，对于后续的开发不利，因为我有一台阿里云服务器一直崩溃，所以集群也一直崩溃，而那台服务器又是主节点，在被折磨两天后毅然选择关掉那台服务器，找同学借了其他的服务器。这也拖累了后面的开发进度。如果我一开始就是先在单节点上部署，可以先进行后续的开发，等到最后再来调整服务器集群的问题，这样我在项目的个性化搜索推荐方面还可以做的更加出色。</p>
-<p>另一个坑是Springboot对ES的操作，Springboot在定义ES的索引的时候，没办法指定分词器，这就很尴尬。ES的默认分词器是英文的，对于中文的支持特特不友好。我输入的句子，他会拆分成一个个的字建立索引，这样的倒排索引，查一个句子的查询结果与预期的相关度相去甚远，归根结底是Spring自己建立索引时候我不会指定分词器，我最终选择学习ES的语法，首先配置好ES的index，只让Spring插入数据，不让他建索引，这样就解决了这个问题。</p>
-<p>另外就是在java中对ES进行数据的查询，repository有些鸡肋，很多想进行的查询都没办法用。我后来查到了一种方法，是加@Query注解，一定程度上缓解了这个问题。其次是sort的问题，我们想做多维的排序，但是ES对这个支持的不是很好，比如有300条数据hit，但是我加入了sort的排序方式，相关度很低的结果可能被拍到前面。于是我在ES中查询时候没有使用sort，但是限制了page size，50左右，然后对返回的一个page的内容进行手动排序，于是手写了多维排序的方法。</p>
-<p>为了java中的多维排序，我使用了最愚蠢的方法。我需要对time view like三个维度做多维排序，他们的排列组合有12种（3+6+6），于是我手写了12条下面的语句。</p>
-<pre><code class="language-java">/*按照view like time排序*/
-Collections.sort(modifyData, (a, b) -&gt; {
-                    if (!a.getView().equals(b.getView())) {
-                        return b.getView() - a.getView();
-                    } else {
-                        if (!a.getLike().equals(b.getLike())) {
-                            return b.getLike() - a.getLike();
-                        } else {
-                            if (!a.getTime().equals(b.getTime())) {
-                                return compareTime(b.getTime(),a.getTime());
-                            }
-                        }
-                    }
-                    return 0;
-                });
-
-/*按照like time view排序*/
-Collections.sort(modifyData, (a, b) -&gt; {
-                    if (!a.getLike().equals(b.getLike())) {
-                        return b.getLike() - a.getLike();
-                    } else {
-                        if (!a.getTime().equals(b.getTime())) {
-                            return compareTime(b.getTime(),a.getTime());
-                        } else {
-                            if (!a.getView().equals(b.getView())) {
-                                return b.getView() - a.getView();
-                            }
-                        }
-                    }
-
-                    return 0;
-                });
-</code></pre>
-<p>这是一个比较愚蠢的方法吧，但是确实解决了我的问题，能够解决问题的办法就是好方法！当然了，我也在一直思考如何有更加优美的写法。</p>
+          <h2 id="感受">感受</h2>
+<p>三月初在西溪田家炳书院和李、刘、严等同学开始晨读，早上8点到8点25学习英语，之后用英语讨论一个topic。</p>
+<p>首先是改正作息习惯，每天7点30起床，因为自己是晨读的发起人，不敢厚着脸皮每次都请假赖床；其次是恢复英语的学习习惯，在大二时就有前辈告诫我英语非常重要，时至今日英语听说读写的能力仍有很大提高空间；最后是和不同专业的同学交流想法，会开阔自己的思维，例如了解了第四纪地质学的研究方法。</p>
+<h2 id="每日讨论">每日讨论</h2>
+<ul>
+<li>以下Topic部分观点来自李、刘、严同学。</li>
+</ul>
+<h4 id="topic是否走出舒适圈">Topic：是否走出舒适圈</h4>
+<p>什么是舒适圈，舒适圈一定是坏的吗？<br>
+对此有两个理解：一种理解是咸鱼的状态，害怕新事物失去掌控，不敢去改变也不想去改变的状态；另一种理解是舒适圈是让自己开心和舒服的一种生活状态，不一定是坏的，比如选择大城市生活还是小城市安逸。<br>
+需要逐步扩大舒适圈，例如扩大自己的朋友圈，认识更多的人，让自己接触未知的事物，但是如果让自己不舒服了，要及时止损。</p>
+<h4 id="topic家乡">Topic：家乡</h4>
+<p>重庆：涪陵，长江乌江交汇之处；地形崎岖，容易迷路；推荐《江城》，以作者在涪陵的两年支教生活为主线，用纪实的语言介绍了涪陵周边的生活图景和城市状态。<br>
+宁夏：塞上江南，羊肉（滩羊排），宗教，地广人稀</p>
+<h4 id="topic女权">Topic：女权</h4>
+<p>女权有两种表现形式，机会平等和结果平等，机会平等是指男女拥有相同的入门券，但是还需要通过竞争进行选拔，结果平等是指给男女分配同样的名额，男女分开竞争。以上两种都是可以接受的，但是存在一些人两个都想要，所以被喷。我们身边的女生更多推崇机会平等的女权，大家都依靠自己的努力得到想要的结果（归因于大学里的竞争更多体现在智力，而不是体力，所以男女平等的基础得到了保证）。</p>
+<h4 id="topic进行专业介绍">Topic：进行专业介绍</h4>
+<p>学习了第四地质地理学，寻找河流；<br>
+学习了心理学和道德的区别：<br>
+Moral psychology grew out of moral philosophy, a field dominated by normative ethics, which studies how people outght to act and why certain acts are right or wrong.</p>
+<p>Morality is an adaption, built upon emotions that are themselves adaptive, with specific moral codes emerging via gene-culture coevolution.</p>
+<h4 id="topic闲暇时间的安排">Topic：闲暇时间的安排</h4>
+<p>和朋友聚餐，运动，拍照等，大家的闲暇时间安排大同小异。<br>
+后续讨论到男女体质的差异，同样的运动量，男生更容易增长肌肉；对女性的body shame。</p>
+<h4 id="activity周六爬山">Activity：周六爬山</h4>
+<p>黄龙洞-蛤蟆峰-北山街；路上聊到穆斯林的一些宗教信仰，斋月（每天东方刚刚开始发亮至日落期间不饮食，除了患病者、旅行者、乳婴、孕妇、哺乳妇、产妇、正在行经的妇女以及作战的士兵外）。</p>
+<p>伊斯兰教：以《古兰经》和圣训作为教导，信仰造物主安拉，认为人生的唯一目的是追随安拉，伊斯兰意为“追随”，穆斯林是伊斯兰的字根，意为“追随者”。先知有亚伯拉罕、摩西、耶稣、穆罕默德。</p>
+<h4 id="宗教起源整理">宗教起源整理：</h4>
+<p><strong>· 犹太教</strong><br>
+亚伯拉罕 - 摩西出埃及记 - 耶稣（公元元年） 这段历史是《塔纳赫》，又称《旧约》<br>
+<strong>· 基督教</strong><br>
+承接犹太教的《塔纳赫》，认为神是亚伯拉罕（上帝） - 耶稣布道、《新约》 - 公元393年罗马帝国确立基督教为唯一信仰 - 大规模扩散<br>
+<strong>· 伊斯兰教</strong><br>
+承接犹太教的《塔纳赫》，认为神是亚伯拉罕（真主安拉） - 公元610年穆罕默德传教、《古兰经》</p>
+<p>最早是犹太教，上帝用七天创造世界，和亚伯拉罕立约，公元前1250年摩西出埃及。直到公元元年，犹太人耶稣诞生，人称上帝之子，四处布道传递上帝福音，他的信徒将耶稣的故事写成书向非犹太人传播，衍生出基督教。耶稣出生前的历史被记录于《塔纳赫》，也就是《旧约》，耶稣的故事被记录为《新约》。313年罗马皇帝君士坦丁合法化基督教，基督教爆发式扩散，392年基督教成为罗马帝国唯一信仰（类似罢黜百家，独尊儒术）。</p>
+<p>公元610年，40岁的穆罕默德受到真主启示，开始宣传伊斯兰教，他所说的话，被记录为《古兰经》，穆斯林认为《古兰经》是神通过穆罕默德之口传到人间的话语。这里的神也是犹太教最早的亚伯拉罕，伊斯兰教认同《塔纳赫》的前五本，比如亚伯拉罕，摩西出埃及记等。但是穆斯林认为耶稣死后复活的故事是其他教编出来的，与基督教出现分歧，所以虽然伊斯兰教和基督教同源，但是都认为对方是异教徒。</p>
+<h4 id="经济学人国外情报机构使用ai用于信息解密">经济学人：国外情报机构使用AI用于信息解密</h4>
+<p>经济学人的这篇《人工智能“投身”情报界，让你无处遁形》讲述spies和intelligence agencies使用AI的场景：</p>
+<ul>
+<li>在冷战时期，美国国安局NSA和英国政府通信总部GCHQ开始使用机器转录苏联的窃听电话</li>
+<li>目前AI可以用于发现可疑的金融交易链，找出涉嫌参与非法买卖核武器材料的公司</li>
+<li>谷歌母公司Alphabet和美国前国防部长领导美国国家安全委员会人工智能小组，到2030年，美国17家间谍机构将建立起持续学习分析引擎的联合架构，分析人工情报到卫星图像等多种信息。</li>
+</ul>
+<p>目前存在的问题：</p>
+<ul>
+<li>西方国家更加注重私人数据的隐私性</li>
+<li>要考虑系统偏见，比如语音识别软件对某些群体是否比对其他群体更有效（美国很重视种族歧视问题orz）</li>
+<li>来自无人机、侦查卫星、截获的电话等数据是未标注的数据，需要大量人工标注（有多少人工就有多少智能orz）</li>
+</ul>
+<h2 id="每日英语">每日英语</h2>
+<ul>
+<li>素材来自 公众号 TeacherGwen 和 每日英语听力 经济学人。</li>
+</ul>
+<p>Our love is six feet under<br>
+I can't help but wonder<br>
+If our grave was watered by the rain<br>
+取自《六尺之下》(six feet under)<br>
+上穷下落见黄泉，两处茫茫皆不见</p>
+<p>And even though I'm in pain, it'worth sticking around to make my little corner of the world a slightly better place.</p>
+<p>I'm just a little bit caught in the middle 左右为难<br>
+Life is a maze and love is a riddle 生活是座迷宫</p>
+<p>As Yellow Crane Tower in the west my old friend says farewell;<br>
+In the mist and flowers of spring he goes down to Yangzhou;</p>
+<p>故人西辞黄鹤楼，烟花三月下扬州</p>
+<p>The film was low on science and high on fiction.</p>
+<p>Although fossils preserve the gross physical features of extinct animals, they are silent about many crucial details that even an incomplete genome can help to fill in.</p>
+<p>You cannot reason with a tiger when your head is in its mouth.（丘吉尔的讲话）</p>
+<p>We have to give Mother Nature tools she needs to use her intelligence to self-heal.</p>
 
           <div class="toc-container"><ul class="markdownIt-TOC">
 <li>
 <ul>
-<li><a href="#%E6%B7%B1%E5%BA%A6%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E4%BD%93%E4%BC%9A">深度搜索引擎体会</a></li>
+<li><a href="#%E6%84%9F%E5%8F%97">感受</a></li>
+<li><a href="#%E6%AF%8F%E6%97%A5%E8%AE%A8%E8%AE%BA">每日讨论</a><br>
+*
+<ul>
+<li><a href="#topic%E6%98%AF%E5%90%A6%E8%B5%B0%E5%87%BA%E8%88%92%E9%80%82%E5%9C%88">Topic：是否走出舒适圈</a></li>
+<li><a href="#topic%E5%AE%B6%E4%B9%A1">Topic：家乡</a></li>
+<li><a href="#topic%E5%A5%B3%E6%9D%83">Topic：女权</a></li>
+<li><a href="#topic%E8%BF%9B%E8%A1%8C%E4%B8%93%E4%B8%9A%E4%BB%8B%E7%BB%8D">Topic：进行专业介绍</a></li>
+<li><a href="#topic%E9%97%B2%E6%9A%87%E6%97%B6%E9%97%B4%E7%9A%84%E5%AE%89%E6%8E%92">Topic：闲暇时间的安排</a></li>
+<li><a href="#activity%E5%91%A8%E5%85%AD%E7%88%AC%E5%B1%B1">Activity：周六爬山</a></li>
+<li><a href="#%E5%AE%97%E6%95%99%E8%B5%B7%E6%BA%90%E6%95%B4%E7%90%86">宗教起源整理：</a></li>
+<li><a href="#%E7%BB%8F%E6%B5%8E%E5%AD%A6%E4%BA%BA%E5%9B%BD%E5%A4%96%E6%83%85%E6%8A%A5%E6%9C%BA%E6%9E%84%E4%BD%BF%E7%94%A8ai%E7%94%A8%E4%BA%8E%E4%BF%A1%E6%81%AF%E8%A7%A3%E5%AF%86">经济学人：国外情报机构使用AI用于信息解密</a></li>
+</ul>
+</li>
+<li><a href="#%E6%AF%8F%E6%97%A5%E8%8B%B1%E8%AF%AD">每日英语</a></li>
 </ul>
 </li>
 </ul>
@@ -237,9 +266,9 @@ Collections.sort(modifyData, (a, b) -&gt; {
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/1/">
+            <a href="https://yangyueren.github.io/post/mit6s081-syscall/">
               <span class="post-title">
-                Chaggie Search Engine&rarr;
+                MIT6.S081 syscall&rarr;
               </span>
             </a>
           </p>
