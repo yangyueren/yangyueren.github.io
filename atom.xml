@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>一只木头人</title>
-    <updated>2021-05-14T07:47:29.992Z</updated>
+    <updated>2021-05-14T07:53:45.178Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -12,8 +12,8 @@
     <rights>All rights reserved 2021, 一只木头人</rights>
     <entry>
         <title type="html"><![CDATA[华为MindSpore数据集加载算子开发]]></title>
-        <id>https://yangyueren.github.io/post/hua-wei-mindspore-shu-ju-ji-jia-zai-suan-zi-kai-fa/</id>
-        <link href="https://yangyueren.github.io/post/hua-wei-mindspore-shu-ju-ji-jia-zai-suan-zi-kai-fa/">
+        <id>https://yangyueren.github.io/post/mindspore-development/</id>
+        <link href="https://yangyueren.github.io/post/mindspore-development/">
         </link>
         <updated>2021-05-14T07:43:53.000Z</updated>
         <content type="html"><![CDATA[<p>MindData 是 MindSpore 的数据处理系统， 为 MindSpore 提供了数据加载和预处理管 道。在训练场景，MindData 负责将训练数据从文件系统加载到训练系统，通过数据处理管道， 进行一系列变换和数据增强，最终组成 Tensor，输入到计算框架进行前向和 反向计算。在推理场景，MindData将推理数据加载到内存，通过预定义的变换后，以 Tensor 形式输入给计算框架进行推理。</p>

@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta content="yes" name="apple-mobile-web-app-capable" />
+<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+<meta name="referrer" content="never">
+<meta name="keywords" content="">
+<meta name="description" content="欢迎访问[一只木头人]的个人博客">
+<meta name="author" content="kveln">
+<title>华为MindSpore数据集加载算子开发 | 一只木头人</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
+<link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
+<link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+<link
+  href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
+  rel='stylesheet' type='text/css'>
+<link rel="alternate" type="application/rss+xml" title="华为MindSpore数据集加载算子开发 | 一只木头人 » Feed"
+  href="https://yangyueren.github.io/atom.xml">
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
+<link href="https://yangyueren.github.io/styles/main.css" rel="stylesheet">
+<script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/850552586/ericamcdn@0.1/css/live2d.css">
+
+<script>hljs.initHighlightingOnLoad();</script>
+
+  <meta property="og:description" content="华为MindSpore数据集加载算子开发" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/mindspore-development/" />
+  <meta property="og:locale" content="zh-CN" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="一只木头人" />
+  <!-- <script src="../assets/styles/scripts/tocScript.js"></script> -->
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+  <div class="container">
+    <a class="navbar-brand" href="https://yangyueren.github.io">一只木头人</a>
+    <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse"
+      data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false"
+      aria-label="Toggle navigation">
+      Menu
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarResponsive">
+      <ul class="navbar-nav ml-auto">
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/">首页</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/archives">归档</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/tags">标签</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/post/about">关于</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          <div class="gridea-search-container">
+            <form id="gridea-search-form" style="position: relative" data-update="1620978822851"
+              action="/search/index.html">
+              <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+              <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+  <!-- Page Header -->
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+  <div class="container">
+    <a class="navbar-brand" href="https://yangyueren.github.io">一只木头人</a>
+    <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse"
+      data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false"
+      aria-label="Toggle navigation">
+      Menu
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarResponsive">
+      <ul class="navbar-nav ml-auto">
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/">首页</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/archives">归档</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/tags">标签</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          
+          <a class="nav-link" href="/post/about">关于</a>
+          
+        </li>
+        
+        <li class="nav-item">
+          <div class="gridea-search-container">
+            <form id="gridea-search-form" style="position: relative" data-update="1620978822851"
+              action="/search/index.html">
+              <input class="search-input" autocomplete="off" spellcheck="false" name="q" placeholder="搜索文章" />
+              <i class="fas fa-search gt-c-content-color-first" style="position: absolute; top: 9px; left: 10px;"></i>
+            </form>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<header class="masthead" style="background-image: url('https://yangyueren.github.io/media/images/home-bg.jpg')">
+  <div class="overlay"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-10 mx-auto">
+        
+          <!-- 没Title为其他页面Header -->
+          
+            <!-- 没Title并且有headerType为Post：文章Header -->
+            <div class="post-heading">
+              <span class="tags">
+                
+                <a href="https://yangyueren.github.io/tag/1YnKKTmmU/" class="tag">C++</a>
+                
+              </span>
+              <h1>华为MindSpore数据集加载算子开发</h1>
+              <span class="meta">
+                Posted on
+                2021-05-14，28 min read
+              </span>
+            </div>
+          
+        
+      </div>
+    </div>
+  </div>
+</header>
+  <!-- Post Content -->
+  <article id="post-content-article">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto post-content-container">
+          
+          <p>MindData 是 MindSpore 的数据处理系统， 为 MindSpore 提供了数据加载和预处理管 道。在训练场景，MindData 负责将训练数据从文件系统加载到训练系统，通过数据处理管道， 进行一系列变换和数据增强，最终组成 Tensor，输入到计算框架进行前向和 反向计算。在推理场景，MindData将推理数据加载到内存，通过预定义的变换后，以 Tensor 形式输入给计算框架进行推理。</p>
+<p>MindData支持python层和C++层API定义数据加载和数据处理流水线，MindData会运行Execution Tree，树上的每个节点对应数据处理流水线中的一步具体操作，例如在数据加载后有各种数据增强的Map算子、Repeat算子，本文将介绍最基本的数据集加载算子。<br>
+一 个 完 整 的 数 据 处 理 算 子 包 含 四 部 分 ： 算 子 Op 实 现 、 算 子 IR （ Intermediate Representation）层定义、Python 层接口定义和 C++层接口定义。</p>
+<h2 id="docker环境配置">docker环境配置</h2>
+<pre><code>docker pull mindspore/mindspore-cpu:devel
+docker run -it -p 8023:22 -p 10022:10022 --name=&quot;mindspore&quot; -v /home/docker_swap:/docker_swap mindspore/mindspore-cpu /bin/bash
+</code></pre>
+<p>进入docker后，下载mindspore代码，安装ssh和libboost-dev</p>
+<pre><code>apt udpate
+apt upgrade
+apt-get install libboost-dev
+apt-get install openssh-server //使用vscode连接docker进行开发
+
+cd ~
+git clone https://gitee.com/yangyueren/mindspore.git
+</code></pre>
+<p>编译</p>
+<pre><code>cd mindspore
+
+bash build.sh -e cpu –j24 –t on (wait for a long time)
+
+pip install ./mindspore/build/package/mindspore-1.2.0-cp37-cp37m-linux_x86_64.whl
+
+</code></pre>
+<h2 id="数据集加载算子开发">数据集加载算子开发</h2>
+<p>以places365数据集为例，详述数据集加载算子的开发过程。<br>
+完整代码：https://gitee.com/yangyueren/mindspore/tree/op_places365/</p>
+<p>新建分支</p>
+<pre><code>git checkout –b places365_dataset
+</code></pre>
+<p>开发places365数据集加载算子需要修改或添加以下文件：</p>
+<pre><code># 底层算子op开发，加载数据集的最底层的类
+mindspore/ccsrc/minddata/dataset/engine/datasetops/source/CMakeLists.txt
+mindspore/ccsrc/minddata/dataset/engine/datasetops/source/places365_op.cc
+mindspore/ccsrc/minddata/dataset/engine/datasetops/source/places365_op.h
+
+
+# 中间node表示层开发（IR层）
+mindspore/ccsrc/minddata/dataset/engine/ir/datasetops/dataset_node.h
+mindspore/ccsrc/minddata/dataset/engine/ir/datasetops/source/CMakeLists.txt
+mindspore/ccsrc/minddata/dataset/engine/ir/datasetops/source/places365_node.cc
+mindspore/ccsrc/minddata/dataset/engine/ir/datasetops/source/places365_node.h
+
+
+# C++层API
+mindspore/ccsrc/minddata/dataset/api/datasets.cc
+mindspore/ccsrc/minddata/dataset/include/datasets.h
+mindspore/ccsrc/minddata/dataset/include/samplers.h
+
+
+# Python API，绑定到C++开发的算子上
+mindspore/ccsrc/minddata/dataset/api/python/bindings/dataset/engine/datasetops/source/bindings.cc
+mindspore/ccsrc/minddata/dataset/api/python/bindings/dataset/engine/ir/datasetops/source/bindings.cc
+
+mindspore/dataset/engine/validators.py
+mindspore/dataset/engine/datasets.py
+
+</code></pre>
+<h3 id="底层op算子开发">底层Op算子开发</h3>
+<p>这里以places365数据集为例，Places365数据集包含365个场景，train-standard包含180万张图片，train-challenge包含800万张图片，val中包含36500张图片。<br>
+Places365数据集提供了两套上述数据集，分别是高分辨率和256*256低分辨率图像。数据集格式如下：</p>
+<pre><code>places365/                            // root directory of places365
+|---categories_places365.txt          //两列，第一列是类别名，第二列是类别ID
+|---places365_train-standard.txt      //两列，第一列是图片的路径，第二列是类别ID
+|---places365_train-challenge.txt    //两列，第一列是图片的路径，第二列是类别ID
+|---train_large_places365standard/   //存放train-standard高分辨率图片
+|---train_large_places365challenge/  //存放train-challenge高分辨率图片
+|---val_large/                       //存放val高分辨率图片
+|---train_256_places365standard/     //存放train-standard低分辨率图片
+|---train_256_places365standard/    //存放train-challenge低分辨率图片
+|---val_256/                         //存放val低分辨率图片
+
+</code></pre>
+<p>本算子将读取数据集中的图片和label，将其封装为Tensor返回，列名为image和label。</p>
+<p>在加载places365数据集时，需要指定以下参数：</p>
+<pre><code>@param std::string root - root directory of places365
+@param const std::string &amp;usage - Usage of this dataset, can be 'train-standard', 'train-challenge' or 'val'. Read the images in this folder and load this meta information.
+@param bool small - Use high resolution images or 256*256 resolution images.
+@param bool decode - Decode images
+
+usage 决定了加载哪个数据集
+usage 和 small参数共同决定了加载哪个文件夹、哪个分辨率大小的数据集
+const std::map&lt;std::pair&lt;std::string, bool&gt;, std::string&gt; K_IMAGES_META = {
+        {std::pair&lt;std::string, bool&gt;(&quot;train-standard&quot;, false), &quot;train_large_places365standard&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-challenge&quot;, false), &quot;train_large_places365challenge&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;val&quot;, false), &quot;val_large&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-standard&quot;, true), &quot;train_256_places365standard&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-challenge&quot;, true), &quot;train_256_places365challenge&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;val&quot;, true), &quot;val_256&quot;},
+};
+</code></pre>
+<h4 id="源码分析">源码分析：</h4>
+<p>由于places365数据集是可以random access的，也即给定一个下标，可以直接取出该下标的图片和label，所以在数据集加载时，用户可以自定义指定sampler（加载哪些下标数据集，比如只加载前300条数据，就没必要把places365所有的数据都读入到内存里，再返回前300条），所以Places365Op继承了RandomAccessOp，主要实现LoadBuffer里的LoadTensorRow函数，LoadTensorRow函数原型为Status Places365Op::LoadTensorRow(row_id_type row_id, TensorRow *trow)，将给定下标row_id的数据放入到trow里。</p>
+<p>其余两个相关的函数分别为：<br>
+Status WalkAllFiles(); 解析图片路径和label信息，不用加载图片到内存。<br>
+Status LaunchThreadsAndInitOp(); 初始化。</p>
+<p>数据集加载的算子逻辑是这样的，它一开始并不会加载图片到内存，它一开始只想知道一共有多少条数据，每个类别的数据对应的index是多少，所以Places365Op里有一个嵌套类Builder，Builder可以构造一个Places365Op，然后调用CountTotalRows函数来获取数据集的信息（注意，此时并不需要加载图片到内存，所以获取数据集的信息会非常快）。当获取了数据集的信息后（一共有多少条数据，每个类别的数据的下标），供给sampler使用，然后再构建Places365Op实例，并且指定要sample的数据的下标，进行数据的加载，这里使用到了多线程并行。<br>
+归根结底，这里是将数据信息的加载（非常快）和数据本身的加载（加载全部会比较慢）分开了，可以让用户指定加载哪些数据，从而不用每次都加载全部，而是直接根据下标进行加载相应的数据集。</p>
+<h4 id="places365_oph">places365_op.h</h4>
+<pre><code>/**
+ * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_PLACES365_OP_H_
+#define MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_PLACES365_OP_H_
+
+#include &lt;memory&gt;
+#include &lt;string&gt;
+#include &lt;algorithm&gt;
+#include &lt;map&gt;
+#include &lt;vector&gt;
+#include &lt;utility&gt;
+#include &lt;opencv2/opencv.hpp&gt;
+#include &lt;opencv2/core/utils/filesystem.hpp&gt;
+
+#include &quot;minddata/dataset/core/tensor.h&quot;
+#include &quot;minddata/dataset/engine/data_buffer.h&quot;
+#include &quot;minddata/dataset/engine/data_schema.h&quot;
+#include &quot;minddata/dataset/engine/datasetops/parallel_op.h&quot;
+#include &quot;minddata/dataset/engine/datasetops/source/sampler/sampler.h&quot;
+#include &quot;minddata/dataset/util/path.h&quot;
+#include &quot;minddata/dataset/util/queue.h&quot;
+#include &quot;minddata/dataset/util/status.h&quot;
+#include &quot;minddata/dataset/util/wait_post.h&quot;
+
+namespace mindspore {
+namespace dataset {
+// Forward declares
+template &lt;typename T&gt;
+class Queue;
+
+using Places365LabelPair = std::pair&lt;std::shared_ptr&lt;Tensor&gt;, uint32_t&gt;;
+
+class Places365Op : public ParallelOp, public RandomAccessOp {
+ public:
+  class Builder {
+   public:
+    // Constructor for Builder class of Places365Op
+    Builder();
+
+    // Destructor.
+    ~Builder() = default;
+
+    // Setter method
+    // @param int32_t rows_per_buffer
+    // @return Builder setter method returns reference to the builder.
+    Builder &amp;SetRowsPerBuffer(int32_t rows_per_buffer) {
+      builder_rows_per_buffer_ = rows_per_buffer;
+      return *this;
+    }
+
+    // Setter method
+    // @param int32_t op_connector_size
+    // @return Builder setter method returns reference to the builder.
+    Builder &amp;SetOpConnectorSize(int32_t op_connector_size) {
+      builder_op_connector_size_ = op_connector_size;
+      return *this;
+    }
+
+    // Setter method
+    // @param int32_t num_workers
+    // @return Builder setter method returns reference to the builder.
+    Builder &amp;SetNumWorkers(int32_t num_workers) {
+      builder_num_workers_ = num_workers;
+      return *this;
+    }
+
+    // Setter method
+    // @param std::shared_ptr&lt;Sampler&gt; sampler
+    // @return Builder setter method returns reference to the builder.
+    Builder &amp;SetSampler(std::shared_ptr&lt;SamplerRT&gt; sampler) {
+      builder_sampler_ = std::move(sampler);
+      return *this;
+    }
+
+    // Setter method
+    // @param const std::string &amp;dir
+    // @return
+    Builder &amp;SetDir(const std::string &amp;dir) {
+      builder_dir_ = dir;
+      return *this;
+    }
+
+    // Setter method
+    // @param const std::string &amp;usage
+    // @return
+    Builder &amp;SetUsage(const std::string &amp;usage) {
+      builder_usage_ = usage;
+      return *this;
+    }
+
+    // Setter method
+    // @param bool small
+    // @return
+    Builder &amp;SetSmall(bool small) {
+      builder_small_ = small;
+      return *this;
+    }
+    // Setter method
+    // @param bool decode
+    // @return
+    Builder &amp;SetDecode(bool decode) {
+      builder_decode_ = decode;
+      return *this;
+    }
+
+
+    // Check validity of input args
+    // @return Status The status code returned
+    Status SanityCheck();
+
+    // The builder &quot;Build&quot; method creates the final object.
+    // @param std::shared_ptr&lt;Places365Op&gt; *op - DatasetOp
+    // @return Status The status code returned
+    Status Build(std::shared_ptr&lt;Places365Op&gt; *op);
+
+   private:
+    std::string builder_dir_;
+    std::string builder_usage_;
+    bool builder_small_;
+    bool builder_decode_;
+    int32_t builder_num_workers_;
+    int32_t builder_rows_per_buffer_;
+    int32_t builder_op_connector_size_;
+    std::shared_ptr&lt;SamplerRT&gt; builder_sampler_;
+    std::unique_ptr&lt;DataSchema&gt; builder_schema_;
+  };
+
+  // Constructor
+  // @param std::string root - dir directory of places365
+  // @param const std::string &amp;usage - Usage of this dataset, can be 'train-standard', 'train-challenge' or 'val'
+  // @param bool small - Use high resolution images or 256*256 resolution images
+  // @param bool decode - Decode  jpg format images
+  // @param int32_t num_workers - number of workers reading images in parallel
+  // @param int32_t rows_per_buffer - number of images (rows) in each buffer
+  // @param int32_t queue_size - connector queue size
+  // @param std::unique_ptr&lt;DataSchema&gt; data_schema - the schema of the mnist dataset
+  // @param td::unique_ptr&lt;Sampler&gt; sampler - sampler tells Places365Op what to read
+  Places365Op(const std::string &amp;root, const std::string &amp;usage, bool small, bool decode, int32_t num_workers, int32_t rows_per_buffer, 
+          int32_t queue_size, std::unique_ptr&lt;DataSchema&gt; data_schema, std::shared_ptr&lt;SamplerRT&gt; sampler);
+
+  // Destructor.
+  ~Places365Op() = default;
+
+  // Worker thread pulls a number of IOBlock from IOBlock Queue, make a buffer and push it to Connector
+  // @param int32_t worker_id - id of each worker
+  // @return Status The status code returned
+  Status WorkerEntry(int32_t worker_id) override;
+
+  // Main Loop of Places365Op
+  // Master thread: Fill IOBlockQueue, then goes to sleep
+  // Worker thread: pulls IOBlock from IOBlockQueue, work on it then put buffer to mOutConnector
+  // @return Status The status code returned
+  Status operator()() override;
+
+  // Method derived from RandomAccess Op, enable Sampler to get all ids for each class
+  // @param (std::map&lt;uint64_t, std::vector&lt;uint64_t &gt;&gt; * map - key label, val all ids for this class
+  // @return Status The status code returned
+  Status GetClassIds(std::map&lt;int32_t, std::vector&lt;int64_t&gt;&gt; *cls_ids) const override;
+
+  // A print method typically used for debugging
+  // @param out
+  // @param show_all
+  void Print(std::ostream &amp;out, bool show_all) const override;
+
+  // Function to count the number of samples in the Places365 dataset
+  // @param dir path to the Places365 directory
+  // @param const std::string &amp;usage - Usage of this dataset, can be 'train-standard', 'train-challenge' or 'val'
+  // @param const bool small - Use high resolution images or 256*256 resolution images
+  // @param const bool decode - Decode  jpg format images
+  // @param count output arg that will hold the minimum of the actual dataset size and numSamples
+  // @return
+  static Status CountTotalRows(const std::string &amp;dir, const std::string &amp;usage, const bool small, const bool decode, int64_t *count);
+
+  // Op name getter
+  // @return Name of the current Op
+  std::string Name() const override { return &quot;Places365Op&quot;; }
+
+ private:
+  // Initialize Sampler, calls sampler-&gt;Init() within
+  // @return Status The status code returned
+  Status InitSampler();
+
+  // Load a tensor row according to a pair
+  // @param row_id_type row_id - id for this tensor row
+  // @param ImageLabelPair pair - &lt;imagefile,label&gt;
+  // @param TensorRow row - image &amp; label read into this tensor row
+  // @return Status The status code returned
+  Status LoadTensorRow(row_id_type row_id, TensorRow *row);
+
+  // @param const std::vector&lt;int64_t&gt; &amp;keys - keys in ioblock
+  // @param std::unique_ptr&lt;DataBuffer&gt; db
+  // @return Status The status code returned
+  Status LoadBuffer(const std::vector&lt;int64_t&gt; &amp;keys, std::unique_ptr&lt;DataBuffer&gt; *db);
+
+  // Iterate through all members in sampleIds and fill them into IOBlock.
+  // @param std::shared_ptr&lt;Tensor&gt; sample_ids -
+  // @param std::vector&lt;int64_t&gt; *keys - keys in ioblock
+  // @return Status The status code returned
+  Status TraversalSampleIds(const std::shared_ptr&lt;Tensor&gt; &amp;sample_ids, std::vector&lt;int64_t&gt; *keys);
+
+  // Load the meta information of categories.
+  // @param const std::string &amp;category_meta_name
+  // @return Status The status code returned
+  Status LoadCategories(const std::string &amp;category_meta_name);
+
+  // Load the meta information of file infomation.
+  // @param const std::string &amp;filelists_meta_name
+  // @return Status The status code returned
+  Status LoadFileLists(const std::string &amp;filelists_meta_name);
+
+  // Get one piece of places365 data
+  // @param uint32_t index Index of the datas
+  // @param std::shared_ptr&lt;Tensor&gt; *image_tensor Store the result in image_tensor
+  // @return Status The status code returned
+  Status GetPlaces365DataTensor(uint32_t index, std::shared_ptr&lt;Tensor&gt; *image_tensor);
+
+  // Read all files in the directory
+  // @return Status The status code returned
+  Status WalkAllFiles();
+
+  // Called first when function is called
+  // @return Status The status code returned
+  Status LaunchThreadsAndInitOp();
+
+
+
+  // reset Op
+  // @return Status The status code returned
+  Status Reset() override;
+
+  // Private function for computing the assignment of the column name map.
+  // @return - Status
+  Status ComputeColMap() override;
+
+  int64_t buf_cnt_;
+  int64_t row_cnt_;
+  int32_t rows_per_buffer_;
+  std::unique_ptr&lt;DataSchema&gt; data_schema_;
+
+  const std::string root_; // directory of image folder
+  const std::string usage_; // can only be &quot;train-challenge&quot;, &quot;train-standard&quot; or &quot;val&quot;
+  const bool small_;
+  const bool decode_;
+
+  std::map&lt;std::string, int&gt; categorie2id_;
+
+  std::vector&lt;std::pair&lt;std::string, uint32_t&gt;&gt; image_path_label_pairs_;
+
+  // std::vector&lt;Places365LabelPair&gt; image_label_pairs_;
+
+};
+}  // namespace dataset
+}  // namespace mindspore
+#endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_PLACES365_OP_H_
+
+</code></pre>
+<h4 id="places365_opcc">places365_op.cc</h4>
+<pre><code>/**
+ * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include &quot;minddata/dataset/engine/datasetops/source/places365_op.h&quot;
+
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+#include &lt;iomanip&gt;
+#include &lt;set&gt;
+#include &quot;utils/ms_utils.h&quot;
+#include &quot;minddata/dataset/core/config_manager.h&quot;
+#include &quot;minddata/dataset/core/tensor_shape.h&quot;
+#include &quot;minddata/dataset/engine/datasetops/source/sampler/sequential_sampler.h&quot;
+#include &quot;minddata/dataset/engine/db_connector.h&quot;
+#include &quot;minddata/dataset/engine/execution_tree.h&quot;
+#ifndef ENABLE_ANDROID
+#include &quot;minddata/dataset/kernels/image/image_utils.h&quot;
+#else
+#include &quot;minddata/dataset/kernels/image/lite_image_utils.h&quot;
+#endif
+
+namespace mindspore {
+namespace dataset {
+const std::string K_CATEGORIES_META = &quot;categories_places365.txt&quot;;
+const std::map&lt;std::string, std::string&gt; K_FILE_LIST_META = {
+    {&quot;train-standard&quot;, &quot;places365_train_standard.txt&quot;},
+    {&quot;train-challenge&quot;, &quot;places365_train_challenge.txt&quot;},
+    {&quot;val&quot;, &quot;places365_val.txt&quot;}
+};
+const std::map&lt;std::pair&lt;std::string, bool&gt;, std::string&gt; K_IMAGES_META = {
+        {std::pair&lt;std::string, bool&gt;(&quot;train-standard&quot;, false), &quot;train_large_places365standard&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-challenge&quot;, false), &quot;train_large_places365challenge&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;val&quot;, false), &quot;val_large&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-standard&quot;, true), &quot;train_256_places365standard&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;train-challenge&quot;, true), &quot;train_256_places365challenge&quot;},
+        {std::pair&lt;std::string, bool&gt;(&quot;val&quot;, true), &quot;val_256&quot;},
+};
+
+Places365Op::Builder::Builder() : builder_sampler_(nullptr), builder_usage_(&quot;train-standard&quot;), builder_small_(true), builder_decode_(true) {
+  std::shared_ptr&lt;ConfigManager&gt; cfg = GlobalContext::config_manager();
+  builder_num_workers_ = cfg-&gt;num_parallel_workers();
+  builder_rows_per_buffer_ = cfg-&gt;rows_per_buffer();
+  builder_op_connector_size_ = cfg-&gt;op_connector_size();
+}
+
+Status Places365Op::Builder::Build(std::shared_ptr&lt;Places365Op&gt; *ptr) {
+  RETURN_IF_NOT_OK(SanityCheck());
+  if (builder_sampler_ == nullptr) {
+    const int64_t num_samples = 0;
+    const int64_t start_index = 0;
+    builder_sampler_ = std::make_shared&lt;SequentialSamplerRT&gt;(start_index, num_samples);
+  }
+  builder_schema_ = std::make_unique&lt;DataSchema&gt;();
+  RETURN_IF_NOT_OK(
+    builder_schema_-&gt;AddColumn(ColDescriptor(&quot;image&quot;, DataType(DataType::DE_UINT8), TensorImpl::kCv, 1)));
+  TensorShape scalar = TensorShape::CreateScalar();
+  RETURN_IF_NOT_OK(builder_schema_-&gt;AddColumn(
+    ColDescriptor(&quot;label&quot;, DataType(DataType::DE_UINT32), TensorImpl::kFlexible, 0, &amp;scalar)));
+  *ptr = std::make_shared&lt;Places365Op&gt;(builder_dir_, builder_usage_, builder_small_, builder_decode_, builder_num_workers_, builder_rows_per_buffer_,
+                                   builder_op_connector_size_, std::move(builder_schema_), std::move(builder_sampler_));
+  return Status::OK();
+}
+
+Status Places365Op::Builder::SanityCheck() {
+  const std::set&lt;std::string&gt; valid = {&quot;train-standard&quot;, &quot;train-challenge&quot;, &quot;val&quot;};
+  Path dir(builder_dir_);
+  std::string err_msg;
+  err_msg += dir.IsDirectory() == false
+               ? &quot;Invalid parameter, MNIST path is invalid or not set, path: &quot; + builder_dir_ + &quot;.\n&quot;
+               : &quot;&quot;;
+  err_msg += builder_num_workers_ &lt;= 0 ? &quot;Invalid parameter, num_parallel_workers must be greater than 0, but got &quot; +
+                                           std::to_string(builder_num_workers_) + &quot;.\n&quot;
+                                       : &quot;&quot;;
+  err_msg += valid.find(builder_usage_) == valid.end()
+               ? &quot;Invalid parameter, usage must be 'train-standard', 'train-challenge', 'val', but got &quot; + builder_usage_ + &quot;.\n&quot;
+               : &quot;&quot;;
+  return err_msg.empty() ? Status::OK() : Status(StatusCode::kMDUnexpectedError, __LINE__, __FILE__, err_msg);
+}
+
+Places365Op::Places365Op(const std::string &amp;root, const std::string &amp;usage, bool small, bool decode, int32_t num_workers, int32_t rows_per_buffer, 
+          int32_t queue_size, std::unique_ptr&lt;DataSchema&gt; data_schema, std::shared_ptr&lt;SamplerRT&gt; sampler)
+    : ParallelOp(num_workers, queue_size, std::move(sampler)),
+      root_(root),
+      usage_(usage),
+      small_(small),
+      decode_(decode),
+      buf_cnt_(0),
+      row_cnt_(0),
+      rows_per_buffer_(rows_per_buffer),
+      categorie2id_({}),
+      image_path_label_pairs_({}),
+      data_schema_(std::move(data_schema)) {
+  io_block_queues_.Init(num_workers, queue_size);
+}
+
+Status Places365Op::TraversalSampleIds(const std::shared_ptr&lt;Tensor&gt; &amp;sample_ids, std::vector&lt;int64_t&gt; *keys) {
+  for (auto itr = sample_ids-&gt;begin&lt;int64_t&gt;(); itr != sample_ids-&gt;end&lt;int64_t&gt;(); ++itr) {
+    if ((*itr) &gt;= num_rows_) continue;  // index out of bound, skipping
+    keys-&gt;push_back(*itr);
+    row_cnt_++;
+    if (row_cnt_ % rows_per_buffer_ == 0) {
+      RETURN_IF_NOT_OK(io_block_queues_[buf_cnt_++ % num_workers_]-&gt;Add(
+        std::make_unique&lt;IOBlock&gt;(IOBlock(*keys, IOBlock::kDeIoBlockNone))));
+      keys-&gt;clear();
+    }
+  }
+  return Status::OK();
+}
+
+// functor that contains the main logic of Places365 op
+Status Places365Op::operator()() {
+  RETURN_IF_NOT_OK(LaunchThreadsAndInitOp());
+  std::unique_ptr&lt;DataBuffer&gt; sampler_buffer;
+  RETURN_IF_NOT_OK(sampler_-&gt;GetNextSample(&amp;sampler_buffer));
+  while (true) {  // each iterator is 1 epoch
+    std::vector&lt;int64_t&gt; keys;
+    keys.reserve(rows_per_buffer_);
+    while (sampler_buffer-&gt;eoe() == false) {
+      std::shared_ptr&lt;Tensor&gt; sample_ids;
+      RETURN_IF_NOT_OK(sampler_buffer-&gt;GetTensor(&amp;sample_ids, 0, 0));
+      if (sample_ids-&gt;type() != DataType(DataType::DE_INT64)) {
+        RETURN_STATUS_UNEXPECTED(&quot;Invalid parameter, data type of Sampler Tensor isn't int64, got &quot; +
+                                 sample_ids-&gt;type().ToString());
+      }
+      RETURN_IF_NOT_OK(TraversalSampleIds(sample_ids, &amp;keys));
+      RETURN_IF_NOT_OK(sampler_-&gt;GetNextSample(&amp;sampler_buffer));
+    }
+    if (keys.empty() == false) {
+      RETURN_IF_NOT_OK(io_block_queues_[(buf_cnt_++) % num_workers_]-&gt;Add(
+        std::make_unique&lt;IOBlock&gt;(IOBlock(keys, IOBlock::kDeIoBlockNone))));
+    }
+    if (IsLastIteration()) {
+      RETURN_IF_NOT_OK(
+        io_block_queues_[(buf_cnt_++) % num_workers_]-&gt;Add(std::make_unique&lt;IOBlock&gt;(IOBlock::kDeIoBlockFlagEoe)));
+      RETURN_IF_NOT_OK(
+        io_block_queues_[(buf_cnt_++) % num_workers_]-&gt;Add(std::make_unique&lt;IOBlock&gt;(IOBlock::kDeIoBlockFlagEof)));
+      for (int32_t i = 0; i &lt; num_workers_; ++i) {
+        RETURN_IF_NOT_OK(
+          io_block_queues_[i]-&gt;Add(std::make_unique&lt;IOBlock&gt;(std::vector&lt;int64_t&gt;(), IOBlock::kDeIoBlockNone)));
+      }
+      return Status::OK();
+    } else {
+      RETURN_IF_NOT_OK(
+        io_block_queues_[(buf_cnt_++) % num_workers_]-&gt;Add(std::make_unique&lt;IOBlock&gt;(IOBlock::kDeIoBlockFlagEoe)));
+    }
+
+    if (epoch_sync_flag_) {
+      // If epoch_sync_flag_ is set, then master thread sleeps until all the worker threads have finished their job for
+      // the current epoch.
+      RETURN_IF_NOT_OK(WaitForWorkers());
+    }
+    // If not the last repeat, self-reset and go to loop again.
+    if (!IsLastIteration()) {
+      RETURN_IF_NOT_OK(Reset());
+      RETURN_IF_NOT_OK(sampler_-&gt;GetNextSample(&amp;sampler_buffer));
+    }
+    UpdateRepeatAndEpochCounter();
+  }
+}
+
+// contains the logic of pulling a IOBlock from IOBlockQueue, load a buffer and push the buffer to out_connector_
+Status Places365Op::WorkerEntry(int32_t worker_id) {
+  TaskManager::FindMe()-&gt;Post();
+  int64_t buffer_id = worker_id;
+  std::unique_ptr&lt;IOBlock&gt; iOBlock;
+  RETURN_IF_NOT_OK(io_block_queues_[worker_id]-&gt;PopFront(&amp;iOBlock));
+  while (iOBlock != nullptr) {
+    if (iOBlock-&gt;wait() == true) {
+      // Sync io_block is a signal that master thread wants us to pause and sync with other workers.
+      // The last guy who comes to this sync point should reset the counter and wake up the master thread.
+      if (++num_workers_paused_ == num_workers_) {
+        wait_for_workers_post_.Set();
+      }
+    } else if (iOBlock-&gt;eoe() == true) {
+      RETURN_IF_NOT_OK(out_connector_-&gt;Add(worker_id, std::make_unique&lt;DataBuffer&gt;(0, DataBuffer::kDeBFlagEOE)));
+      buffer_id = worker_id;
+    } else if (iOBlock-&gt;eof() == true) {
+      RETURN_IF_NOT_OK(out_connector_-&gt;Add(worker_id, std::make_unique&lt;DataBuffer&gt;(0, DataBuffer::kDeBFlagEOF)));
+    } else {
+      std::vector&lt;int64_t&gt; keys;
+      RETURN_IF_NOT_OK(iOBlock-&gt;GetKeys(&amp;keys));
+      if (keys.empty() == true) return Status::OK();  // empty key is a quit signal for workers
+      std::unique_ptr&lt;DataBuffer&gt; db = std::make_unique&lt;DataBuffer&gt;(buffer_id, DataBuffer::kDeBFlagNone);
+      RETURN_IF_NOT_OK(LoadBuffer(keys, &amp;db));
+      RETURN_IF_NOT_OK(out_connector_-&gt;Add(worker_id, std::move(db)));
+      buffer_id += num_workers_;
+    }
+    RETURN_IF_NOT_OK(io_block_queues_[worker_id]-&gt;PopFront(&amp;iOBlock));
+  }
+  RETURN_STATUS_UNEXPECTED(&quot;Unexpected nullptr received in worker.&quot;);
+}
+
+Status Places365Op::LoadTensorRow(row_id_type row_id, TensorRow *trow) {
+  std::shared_ptr&lt;Tensor&gt; image, label;
+  // make a copy of cached tensor
+  RETURN_IF_NOT_OK(GetPlaces365DataTensor(row_id, &amp;image));
+  RETURN_IF_NOT_OK(Tensor::CreateScalar(image_path_label_pairs_[row_id].second, &amp;label));
+
+  (*trow) = TensorRow(row_id, {std::move(image), std::move(label)});
+  // trow-&gt;setPath({image_path_[row_id], label_path_[row_id]});
+  return Status::OK();
+}
+
+// Looping over LoadTensorRow to make 1 DataBuffer. 1 function call produces 1 buffer
+Status Places365Op::LoadBuffer(const std::vector&lt;int64_t&gt; &amp;keys, std::unique_ptr&lt;DataBuffer&gt; *db) {
+  std::unique_ptr&lt;TensorQTable&gt; deq = std::make_unique&lt;TensorQTable&gt;();
+  TensorRow trow;
+  for (const int64_t &amp;key : keys) {
+    RETURN_IF_NOT_OK(this-&gt;LoadTensorRow(key, &amp;trow));
+    deq-&gt;push_back(std::move(trow));
+  }
+  (*db)-&gt;set_tensor_table(std::move(deq));
+  return Status::OK();
+}
+
+void Places365Op::Print(std::ostream &amp;out, bool show_all) const {
+  if (!show_all) {
+    // Call the super class for displaying any common 1-liner info
+    ParallelOp::Print(out, show_all);
+    // Then show any custom derived-internal 1-liner info for this op
+    out &lt;&lt; &quot;\n&quot;;
+  } else {
+    // Call the super class for displaying any common detailed info
+    ParallelOp::Print(out, show_all);
+    // Then show any custom derived-internal stuff
+    out &lt;&lt; &quot;\nNumber of rows:&quot; &lt;&lt; num_rows_ &lt;&lt; &quot;\nPlaces365 Directory: &quot; &lt;&lt; root_ &lt;&lt; &quot;\n\n&quot;;
+  }
+}
+
+// Reset Sampler and wakeup Master thread (functor)
+Status Places365Op::Reset() {
+  MS_LOG(DEBUG) &lt;&lt; Name() &lt;&lt; &quot; performing a self-reset.&quot;;
+  RETURN_IF_NOT_OK(sampler_-&gt;ResetSampler());
+  row_cnt_ = 0;
+  return Status::OK();
+}
+
+// hand shake with Sampler, allow Sampler to call RandomAccessOp's functions to get NumRows
+Status Places365Op::InitSampler() {
+  RETURN_IF_NOT_OK(sampler_-&gt;HandshakeRandomAccessOp(this));
+  return Status::OK();
+}
+
+// Derived from RandomAccessOp
+Status Places365Op::GetClassIds(std::map&lt;int32_t, std::vector&lt;int64_t&gt;&gt; *cls_ids) const {
+  if (cls_ids == nullptr || !cls_ids-&gt;empty() || image_path_label_pairs_.empty()) {
+    if (image_path_label_pairs_.empty()) {
+      RETURN_STATUS_UNEXPECTED(&quot;No image found in dataset, please check if Op read images successfully or not.&quot;);
+    } else {
+      RETURN_STATUS_UNEXPECTED(
+        &quot;Map for storaging image-index pair is nullptr or has been set in other place,&quot;
+        &quot;it must be empty before using GetClassIds.&quot;);
+    }
+  }
+  for (size_t i = 0; i &lt; image_path_label_pairs_.size(); ++i) {
+    (*cls_ids)[image_path_label_pairs_[i].second].push_back(i);
+  }
+  for (auto &amp;pair : (*cls_ids)) {
+    pair.second.shrink_to_fit();
+  }
+  return Status::OK();
+}
+
+// Load the meta information of categories.
+// @param const std::string &amp;category_meta_name
+// @return Status The status code returned
+Status Places365Op::LoadCategories(const std::string &amp;category_meta_name){
+    std::ifstream reader(category_meta_name);
+    // std::cout &lt;&lt; category_meta_name &lt;&lt; std::endl;
+    CHECK_FAIL_RETURN_UNEXPECTED(!reader.fail(), category_meta_name + &quot; File not exists!&quot;);
+    std::string path;
+    int label;
+    
+    while (reader &gt;&gt; path &gt;&gt; label){
+        categorie2id_.insert({path, label});
+    }
+    reader.close();
+    return Status::OK();
+
+}
+
+// Load the meta information of file infomation.
+// @param const std::string &amp;filelists_meta_name
+// @return Status The status code returned
+Status Places365Op::LoadFileLists(const std::string &amp;filelists_meta_name){
+    // std::cout &lt;&lt; filelists_meta_name &lt;&lt; std::endl;
+    std::ifstream reader(filelists_meta_name);
+    CHECK_FAIL_RETURN_UNEXPECTED(!reader.fail(), filelists_meta_name + &quot; File not exists!&quot;);
+    std::string path;
+    int label;
+    std::string folder_path = cv::utils::fs::join(root_, K_IMAGES_META.at(std::make_pair(usage_, small_)));
+    image_path_label_pairs_.clear();
+    while (reader &gt;&gt; path &gt;&gt; label){
+        image_path_label_pairs_.push_back({cv::utils::fs::join(folder_path, path), label});
+    }
+    reader.close();
+    return Status::OK();
+}
+
+// Get one piece of places365 data
+// @param uint32_t index Index of the datas
+// @param std::shared_ptr&lt;Tensor&gt; *image_tensor Store the result in image_tensor
+// @return Status The status code returned
+Status Places365Op::GetPlaces365DataTensor(uint32_t index, std::shared_ptr&lt;Tensor&gt; *image_tensor){
+
+    std::string file_path = image_path_label_pairs_[index].first;
+
+    RETURN_IF_NOT_OK(Tensor::CreateFromFile(file_path, image_tensor));
+    if(decode_){
+        Status rc = Decode(*image_tensor, image_tensor);
+        if (rc.IsError()) {
+          *image_tensor = nullptr;
+          std::string err_msg = &quot;Invalid data, failed to decode image: &quot; + file_path;
+          return Status(StatusCode::kMDUnexpectedError, __LINE__, __FILE__, err_msg);
+        }
+    }
+
+    
+
+    return Status::OK();
+}
+
+// Read all files in the directory
+// @return Status The status code returned
+Status Places365Op::WalkAllFiles(){
+    RETURN_IF_NOT_OK(LoadCategories(cv::utils::fs::join(root_, K_CATEGORIES_META)));
+    RETURN_IF_NOT_OK(LoadFileLists(cv::utils::fs::join(root_, K_FILE_LIST_META.at(usage_))));
+    num_rows_ = image_path_label_pairs_.size();
+    if (num_rows_ == 0) {
+      RETURN_STATUS_UNEXPECTED(
+        &quot;Invalid data, no valid data matching the dataset API Places365Dataset. Please check file path or dataset API.&quot;);
+    }
+    return Status::OK();
+}
+
+// Called first when function is called
+// @return Status The status code returned
+Status Places365Op::LaunchThreadsAndInitOp(){
+    if (tree_ == nullptr) {
+        RETURN_STATUS_UNEXPECTED(&quot;Pipeline init failed, Execution tree not set.&quot;);
+    }
+    RETURN_IF_NOT_OK(io_block_queues_.Register(tree_-&gt;AllTasks()));
+    RETURN_IF_NOT_OK(wait_for_workers_post_.Register(tree_-&gt;AllTasks()));
+    RETURN_IF_NOT_OK(
+            tree_-&gt;LaunchWorkers(num_workers_, std::bind(&amp;Places365Op::WorkerEntry, this, std::placeholders::_1), &quot;&quot;, id()));
+    TaskManager::FindMe()-&gt;Post();
+    RETURN_IF_NOT_OK(this-&gt;WalkAllFiles());
+    RETURN_IF_NOT_OK(this-&gt;InitSampler());  // handle shake with sampler
+
+
+
+    return Status::OK();
+}
+
+
+Status Places365Op::CountTotalRows(const std::string &amp;dir, const std::string &amp;usage, const bool small, const bool decode, int64_t *count) {
+  // the logic of counting the number of samples is copied from ParseMnistData() and uses CheckReader()
+  std::shared_ptr&lt;Places365Op&gt; op;
+  *count = 0;
+  RETURN_IF_NOT_OK(Builder().SetDir(dir).SetUsage(usage).SetSmall(small).SetDecode(decode).Build(&amp;op));
+
+  RETURN_IF_NOT_OK(op-&gt;WalkAllFiles());
+
+  for (size_t i = 0; i &lt; op-&gt;image_path_label_pairs_.size(); ++i) {
+    CHECK_FAIL_RETURN_UNEXPECTED(cv::utils::fs::exists(op-&gt;image_path_label_pairs_[i].first),
+                                 &quot;Invalid data, num of images is not equal to num of labels.&quot;);
+  }
+  *count = op-&gt;image_path_label_pairs_.size();
+
+  return Status::OK();
+}
+
+Status Places365Op::ComputeColMap() {
+  // set the column name map (base class field)
+  if (column_name_id_map_.empty()) {
+    for (int32_t i = 0; i &lt; data_schema_-&gt;NumColumns(); ++i) {
+      column_name_id_map_[data_schema_-&gt;column(i).name()] = i;
+    }
+  } else {
+    MS_LOG(WARNING) &lt;&lt; &quot;Column name map is already set!&quot;;
+  }
+  return Status::OK();
+}
+
+
+}  // namespace dataset
+}  // namespace mindspore
+
+</code></pre>
+
+          <div class="toc-container"><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#docker%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE">docker环境配置</a></li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%8A%A0%E8%BD%BD%E7%AE%97%E5%AD%90%E5%BC%80%E5%8F%91">数据集加载算子开发</a>
+<ul>
+<li><a href="#%E5%BA%95%E5%B1%82op%E7%AE%97%E5%AD%90%E5%BC%80%E5%8F%91">底层Op算子开发</a>
+<ul>
+<li><a href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90">源码分析：</a></li>
+<li><a href="#places365_oph">places365_op.h</a></li>
+<li><a href="#places365_opcc">places365_op.cc</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+          
+          <hr />
+          <p class="next-post">下一篇：
+            <a href="https://yangyueren.github.io/post/2021-nian-3-yue-chen-du-ji-lu/">
+              <span class="post-title">
+                2021年3月晨读记录&rarr;
+              </span>
+            </a>
+          </p>
+          
+          <div class="comment" style="text-align: center;">
+            
+
+            
+            
+          </div>
+        </div>
+      </div>
+  </article>
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+          <ul class="list-inline text-center">
+            
+            
+            <li class="list-inline-item">
+              <a href="https://github.com/yangyueren" target="_blank">
+                <span class="fa-stack fa-lg">
+                  <i class="fas fa-circle fa-stack-2x"></i>
+                  <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                </span>
+              </a>
+            </li>
+            
+              
+            
+              
+            
+              
+            
+              
+            
+              
+            
+              
+            
+              
+              <!-- <li class="list-inline-item">
+              <a href="https://yangyueren.github.io/atom.xml" target="_blank">
+                <span class="fa-stack fa-lg">
+                  <i class="fas fa-circle fa-stack-2x"></i>
+                  <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+                </span>
+              </a>
+              </li> -->
+          </ul>
+          <p class="copyright text-muted">Copyright &copy;<span>一只木头人</span><br>Powered by Gridea</p>
+        </div>
+      </div>
+    </div>
+   </footer>
+  <!-- Bootstrap core JavaScript -->
+  <script src="https://cdn.bootcss.com/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+  <!-- <script src="https://yangyueren.github.io/media/scripts/bootstrap.bundle.min.js"></script> -->
+  <!-- Bootstrap core JavaScript -->
+  <script src="https://cdn.jsdelivr.net/gh/Alanrk/clean-cdn@1.0/scripts/clean-blog.min.js"></script>
+  <!-- <script src="https://yangyueren.github.io/media/scripts/clean-blog.min.js"></script> -->
+  <script src="//instant.page/3.0.0" type="module" defer integrity="sha384-OeDn4XE77tdHo8pGtE1apMPmAipjoxUQ++eeJa6EtJCfHlvijigWiJpD7VDPWXV1"></script>
+  <style type="text/css">a.back_to_top{text-decoration:none;position:fixed;bottom:40px;right:30px;background:#f0f0f0;height:40px;width:40px;border-radius:50%;line-height:36px;font-size:18px;text-align:center;transition-duration:.5s;transition-propety:background-color;display:none}a.back_to_top span{color:#888}a.back_to_top:hover{cursor:pointer;background:#dfdfdf}a.back_to_top:hover span{color:#555}@media print,screen and(max-width:580px){.back_to_top{display:none!important}}</style>
+<a id="back_to_top" href="#" class="back_to_top">
+  <span>▲</span></a>
+<script>$(document).ready((function(_this) {
+    return function() {
+      var bt;
+      bt = $('#back_to_top');
+      if ($(document).width() > 480) {
+        $(window).scroll(function() {
+          var st;
+          st = $(window).scrollTop();
+          if (st > 30) {
+            return bt.css('display', 'block')
+          } else {
+            return bt.css('display', 'none')
+          }
+        });
+        return bt.click(function() {
+          $('body,html').animate({
+            scrollTop: 0
+          },
+          800);
+          return false
+        })
+      }
+    }
+  })(this));</script>
+  
+  <div id="landlord-parent">
+    <div id="landlord">
+        <div class="message" style="opacity:0"></div>
+        <canvas id="live2d" width="240" height="250" class="live2d"></canvas>
+    </div>
+</div>
+
+<script type="text/javascript">
+    if (/(iPhone|iPad|iPod|iOS|Android)/i.test(navigator.userAgent)) {
+        //移动端
+        console.log("------ 移动端");
+    } else {
+        console.log("------ PC端 " + navigator.userAgent);
+
+        addScript("https://cdn.jsdelivr.net/gh/850552586/ericamcdn@0.1/js/live2d.js", () => {
+            // 加载完成后再loadlive2d
+            loadlive2d("live2d", "https://yangyueren.github.io/media/live2d/assets/tororo.model.json");
+        });
+
+        var home_Path = "https://yangyueren.github.io/";
+        addScript("https://yangyueren.github.io/media/live2d/js/message.js", () => { });
+    }
+
+    // 插入js文件，完成后callback
+    function addScript(jsfile, callback) {
+        var landlord_parent = document.getElementById("landlord-parent");
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = jsfile;
+        landlord_parent.appendChild(script);
+        script.onload = script.onreadystatechange = function () {
+            if (!this.readyState || this.readyState === "loaded" || this.readyState === "complete") {
+                script.onload = script.onreadystatechange = null;
+                if (callback && typeof callback == "function") {
+                    callback(); //window[callback]();如果传递字符串过来 调用window['函数名']() 调用方法
+                }
+            }
+        };
+    }
+</script>
+  
+  <script src="https://yangyueren.github.io/media/scripts/tocScript.js"></script>
+</body>
+
+</html>
