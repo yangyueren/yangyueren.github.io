@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[一只木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>CSAPP RIO包用于I/O | 一只木头人</title>
+<title>chapter2 管理线程 | 一只木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="CSAPP RIO包用于I/O | 一只木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="chapter2 管理线程 | 一只木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="CSAPP RIO包用于I/O" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/csapp-rio-bao-yong-yu-io/" />
+  <meta property="og:description" content="chapter2 管理线程" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/chapter2-guan-li-xian-cheng/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="一只木头人" />
@@ -151,13 +151,15 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/BCxyA3-H-/" class="tag">RIO</a>
+                <a href="https://yangyueren.github.io/tag/c4spScV9y/" class="tag">多线程</a>
+                
+                <a href="https://yangyueren.github.io/tag/1YnKKTmmU/" class="tag">C++</a>
                 
               </span>
-              <h1>CSAPP RIO包用于I/O</h1>
+              <h1>chapter2 管理线程</h1>
               <span class="meta">
                 Posted on
-                2021-02-08，6 min read
+                2021-10-03，6 min read
               </span>
             </div>
           
@@ -172,331 +174,262 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <!-- more -->
-<pre><code class="language-markdown">RIO
+          <p>Created: October 29, 2020 7:59 PM (GMT)<br>
+Created by: yangyueren<br>
+Tags: 管理线程<br>
+chapter: 2</p>
+<h1 id="管理线程">管理线程</h1>
+<h1 id="recall">Recall</h1>
+<h3 id="传入thread的参数临时对象有什么问题">传入thread的参数？临时对象有什么问题？</h3>
+<h3 id="线程detach引用了主线程的资源">线程detach引用了主线程的资源？</h3>
+<h3 id="异常情况下何时调用join">异常情况下何时调用join？</h3>
+<h3 id="stdthread-传入-引用">std::thread 传入 引用?</h3>
+<p>std::bind? std::decay?</p>
+<p>std::ref?</p>
+<h3 id="转移线程所有权">转移线程所有权</h3>
+<p>thread 是可以被move的，但是不能被copy</p>
+<h3 id="比thread_guard更好的scoped_thread">比thread_guard更好的scoped_thread？</h3>
+<p>好在哪里</p>
+<h3 id="运行时选择线程数量">运行时选择线程数量?</h3>
+<h1 id="notes">Notes</h1>
+<h3 id="传入thread的参数临时对象有什么问题-2">传入thread的参数？临时对象有什么问题？</h3>
+<ul>
+<li>可以是一个重载了operator()的struct</li>
+</ul>
+<pre><code class="language-cpp">class background_task{
+public:
+	void operator() const{
+		do_something();
+	}
+};
+background_task f = background_task();
+std::thread t(f);
 
-- 解决short count
-
-- 提供方便、健壮、高效的IO
-
-两类函数
-
-- 无缓冲的输入输出
-
-  rio_readn
-
-  rio_writen
-
-​		绝不会返回不足值
-
-- 带缓冲的输入输出
-
-​        rio_readlineb
-
-​            读文本行
-
-​            停止条件
-
-​                读了maxlen个字节
-
-​                遇到了EOF
-
-​                遇到了换行符
-
-​        rio_readnb
-
-​            读字节 不区分文本和二进制文件
-
-​            停止条件
-
-​           	 maxlen : 因为里面用了一个while循环，如果还有left，就继续读，如果buffer已经空了，就调用rio_read填充buffer后再读。
-
-​            	遇到EOF
-
-​        
-
-​        readlineb和readnb可以混用，但不能和readn混用
 </code></pre>
-<pre><code class="language-c">/*my version of rio*/
-#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;sys/types.h&gt;
-#include &lt;sys/stat.h&gt;
-#include &lt;fcntl.h&gt;
-#include &lt;string.h&gt;
-#include &lt;errno.h&gt;
+<pre><code class="language-cpp">//使用临时对象，容易报错
+std::thread my_thread(background_task()); // 会解析为函数
+//正确用法
+std::thread my_thread((background_task()));
+std::thread my_thread{background_task()};
 
-typedef struct{
-    int rio_fd; //file descriptor
-    int rio_cnt; //unread bytes
-    char rio_buffer[32];
-    char *rio_p; //pointer to next unread byte;
-} rio_t;
-
-void rio_initb(rio_t *rp, int fd){
-    rp-&gt;rio_fd = fd;
-    rp-&gt;rio_cnt = 0;
-    rp-&gt;rio_p = rp-&gt;rio_buffer;
+</code></pre>
+<h3 id="线程detach引用了主线程的资源-2">线程detach引用了主线程的资源？</h3>
+<p>当线程被detach后，与主线程的生命周期分离，但是如果线程还在引用主线程里的变量，要小心主线程已经结束，释放了那些对象。</p>
+<p>处理这种情况的通用做法是让线程函数自包含（译注：也就是函数本身什么都有，不需要依赖外部数据），将数据拷贝到线程中，而非共享数据。</p>
+<h3 id="异常情况下何时调用join-2">异常情况下何时调用join？</h3>
+<p>主线程调用子线程的join，要在主线程抛出异常前的对方调用。也需要在异常处理过程中调用join()，从而避免意外的生命周期问题。</p>
+<ul>
+<li>
+<p>使用try catch</p>
+<pre><code class="language-cpp">class background_task;
+void f(){
+	int local_var = 0;
+	std::thread t({background_task()});
+	try{
+		do_something_in_current_thread();
+	}catch(...){
+		t.join();
+		throw;
+	}
+	t.join();
 }
 
-//把buffer里的拷贝进usrbuf
-int rio_read(rio_t *rp, char *usrbuf, size_t size){
+</code></pre>
+</li>
+<li>
+<p>使用RAII</p>
+<pre><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;thread&gt;
 
-    while(rp-&gt;rio_cnt &lt;= 0){
-        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buffer, sizeof(rp-&gt;rio_buffer));
-        if(rp-&gt;rio_cnt &lt; 0){
-            if(errno != EINTR){
-                return -1;
-            }
-        }else if(rp-&gt;rio_cnt == 0){
-            return 0;
-        }else{
-            rp-&gt;rio_p = rp-&gt;rio_buffer;
+struct func;
+
+class thread_guard{
+
+private:    
+	  std::thread &amp;t;
+
+public:
+    explicit thread_guard(std::thread&amp; t): t(t){
+
+    }
+    ~thread_guard(){
+        if(t.joinable()){
+            t.join();
         }
     }
-    int cnt = size;
-    if(cnt &gt; rp-&gt;rio_cnt){
-        cnt = rp-&gt;rio_cnt;
-    }
-    memcpy(usrbuf, rp-&gt;rio_p, cnt);
-    rp-&gt;rio_p += cnt;
-    rp-&gt;rio_cnt -= cnt;
-    return cnt;
+    thread_guard(const thread_guard&amp; t) = delete;
+    thread_guard&amp; operator=(const thread_guard&amp;) = delete;
+
+};
+
+struct functor;
+void f(){
+    int local_state = 0;
+    struct functor myfunc();
+    std::thread t(myfunc);
+    thread_guard g(t);
+    do_some_thing_in_current_thread();
+}
+</code></pre>
+</li>
+</ul>
+<h3 id="stdthread-传入-引用-2">std::thread 传入 引用?</h3>
+<pre><code class="language-cpp">class widget{
+
+};
+void update_data(widget&amp; data);
+void f2(){
+    widget data;
+    std::thread t(update_data, data); 
+// 编译不通过，尽管update_data的第一个参数期待传入一个引用，
+// 但是std::thread的构造函数并不知晓；                  
+//构造函数无视函数期待的参数类型，并盲目地拷贝已提供的变量。
 }
 
-int rio_readnb(rio_t *rp, char *des, size_t size){
-    int left = size;
-    int n;
-    char *p = des;
-    while(left &gt; 0){
-        n = rio_read(rp, p, left);
-        if(n &lt; 0){
-            return -1; /* errno set by read() */
-        }else if(n==0){
-            break; /* EOF */
-        }else{
-            left -= n;
-            p += n;
-        }
-    }
-    return (size - left);
-}
+// 正确用法；类似std::bind
+std::thread t(update_data_for_widget,w,std::ref(data));
+/*
+std::bind always copies its arguments, but callers can achieve the 
+effect of having an argument stored by  reference by applying std::ref to it.
+*/
+</code></pre>
+<p>Simply speaking, <strong>std::decay</strong> can remove references from type. For example, std::decay&lt;int&amp;&gt;::type is the same as just int. For std::thread and std::bind, when they store the parameters you passed in, std::decay<T>::type is used as the type for each of the parameters. Therefore, when a reference is passed in, a copy is created instead of simply storing a reference.</p>
+<pre><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;type_traits&gt;
 
-int rio_readlineb(rio_t *rp, char* des, size_t max_size){
-    int left = max_size-1;
-    char *p = des;
-    int n;
-    while(left &gt; 0){
-        if(n = rio_read(rp, p, 1) == 1){
-            left--;
-            if(*p == '\n'){
-                p++;
-                break;
-            }else{
-                p++;
-            }
-            
-        }else if(n==0){
-            if(p == des) return 0; //no data read, EOF
-            else break; // some data read, EOF
-        }else{
-            return -1;
-        }
-    }
-    *p = 0;
-    return p-des;
-}
+using namespace std;
 
 int main()
 {
-    rio_t rt;
-    int fd1 = open(&quot;README2&quot;, O_RDONLY);
-    rio_initb(&amp;rt, fd1);
+        int a = 0;
+        int&amp; a_ref = a;
+        decay&lt;int&amp;&gt;::type a_copy = a_ref;
 
-    
-    char buf[64];
-    int size = 64;
-    rio_readlineb(&amp;rt, buf, size);
-    printf(&quot;%s&quot;, buf);
+        a_ref++;
+        cout &lt;&lt; a &lt;&lt; endl;
+        cout &lt;&lt; a_copy &lt;&lt; endl;
+}
+//output
+/*
+0
+1
+*/
+</code></pre>
+<p>std::ref 可以让引用变得 copyable</p>
+<p>To overcome what <code>std::decay</code> does to references, we must have a copiable object which stores a reference internally. This is exactly what <code>[std::reference_wrapper](https://en.cppreference.com/w/cpp/utility/functional/reference_wrapper)</code> does.</p>
+<blockquote>
+<p>std::reference_wrapper is a class template that wraps a reference in a copyable, assignable object. It is frequently used as a mechanism to store references inside standard containers (like std::vector) which cannot normally hold references.</p>
+</blockquote>
+<p><code>[std::ref](https://en.cppreference.com/w/cpp/utility/functional/ref)</code> is a handy function in the standard library to create a <code>std::reference_wrapper</code> object. With <code>std::ref</code>, we can finally pass references as parameters correctly as shown below (continuing the example above).</p>
+<pre><code class="language-cpp">void inc(int&amp; x)
+{
+        x++;
+        cout &lt;&lt; &quot;Inside inc, x is now &quot; &lt;&lt; x &lt;&lt; endl;
+}
+int main()
+{
+        int a = 0;
+        int b = 0;
 
+        auto func1 = bind(inc, a);
+        func1();
+        cout &lt;&lt; &quot;After func1, value of a is &quot; &lt;&lt; a &lt;&lt; endl;
+
+        auto func2 = bind(inc, ref(b));
+        func2();
+        cout &lt;&lt; &quot;After func2, value of b is &quot; &lt;&lt; b &lt;&lt; endl;
+}
+
+/*output
+
+Inside inc, x is now 1
+After func1, value of a is 0
+Inside inc, x is now 1
+After func2, value of b is 1
+*/
+
+</code></pre>
+<h3 id="转移线程所有权-2">转移线程所有权</h3>
+<pre><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;thread&gt;
+
+void func(){
+    std::cout &lt;&lt; &quot;func&quot; &lt;&lt; std::endl;
+}
+
+int main(){
+    std::thread t(func);
+    std::thread&amp; g = t; //right
+		// std::thread g = t; //wrong
+    g.join();
+    std::cout &lt;&lt; &quot;main&quot; &lt;&lt; std::endl;
 }
 </code></pre>
-<pre><code class="language-c">
-/****************************************
- * The Rio package - Robust I/O functions
- ****************************************/
-
-/*
- * rio_readn - Robustly read n bytes (unbuffered)
- */
-/* $begin rio_readn */
-ssize_t rio_readn(int fd, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nread;
-    char *bufp = usrbuf;
-
-    while (nleft &gt; 0)
-    {
-        if ((nread = read(fd, bufp, nleft)) &lt; 0)
-        {
-            if (errno == EINTR) /* Interrupted by sig handler return */
-                nread = 0;      /* and call read() again */
-            else
-                return -1; /* errno set by read() */
+<h3 id="比thread_guard更好的scoped_thread-2">比thread_guard更好的scoped_thread？</h3>
+<pre><code class="language-cpp">class scoped_thread{
+private:
+    std::thread t_;
+public:
+    scoped_thread(std::thread t): t_(std::move(t)){
+        if(!t_.joinable()){
+            throw std::logic_error(&quot;No thread&quot;);
         }
-        else if (nread == 0)
-            break; /* EOF */
-        nleft -= nread;
-        bufp += nread;
     }
-    return (n - nleft); /* Return &gt;= 0 */
-}
-/* $end rio_readn */
-
-/*
- * rio_writen - Robustly write n bytes (unbuffered)
- */
-/* $begin rio_writen */
-ssize_t rio_writen(int fd, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nwritten;
-    char *bufp = usrbuf;
-
-    while (nleft &gt; 0)
-    {
-        if ((nwritten = write(fd, bufp, nleft)) &lt;= 0)
-        {
-            if (errno == EINTR) /* Interrupted by sig handler return */
-                nwritten = 0;   /* and call write() again */
-            else
-                return -1; /* errno set by write() */
-        }
-        nleft -= nwritten;
-        bufp += nwritten;
+    ~scoped_thread(){
+        t_.join();
     }
-    return n;
+    scoped_thread(const scoped_thread&amp;) = delete;
+    scoped_thread&amp; operator=(const scoped_thread&amp;) = delete;
+};
+struct func;
+void f(){
+    int some_local_state = 0;
+    scoped_thread s(std::thread(func(some_local_state)));
+    do_some_thing_in_current_thread();
 }
-/* $end rio_writen */
-
-/* 
- * rio_read - This is a wrapper for the Unix read() function that
- *    transfers min(n, rio_cnt) bytes from an internal buffer to a user
- *    buffer, where n is the number of bytes requested by the user and
- *    rio_cnt is the number of unread bytes in the internal buffer. On
- *    entry, rio_read() refills the internal buffer via a call to
- *    read() if the internal buffer is empty.
- */
-/* $begin rio_read */
-static ssize_t rio_read(rio_t *rp, char *usrbuf, size_t n)
-{
-    int cnt;
-
-    while (rp-&gt;rio_cnt &lt;= 0)
-    { /* Refill if buf is empty */
-        rp-&gt;rio_cnt = read(rp-&gt;rio_fd, rp-&gt;rio_buf,
-                           sizeof(rp-&gt;rio_buf));
-        if (rp-&gt;rio_cnt &lt; 0)
-        {
-            if (errno != EINTR) /* Interrupted by sig handler return */
-                return -1;
-        }
-        else if (rp-&gt;rio_cnt == 0) /* EOF */
-            return 0;
-        else
-            rp-&gt;rio_bufptr = rp-&gt;rio_buf; /* Reset buffer ptr */
-    }
-
-    /* Copy min(n, rp-&gt;rio_cnt) bytes from internal buf to user buf */
-    cnt = n;
-    if (rp-&gt;rio_cnt &lt; n)
-        cnt = rp-&gt;rio_cnt;
-    memcpy(usrbuf, rp-&gt;rio_bufptr, cnt);
-    rp-&gt;rio_bufptr += cnt;
-    rp-&gt;rio_cnt -= cnt;
-    return cnt;
-}
-/* $end rio_read */
-
-/*
- * rio_readinitb - Associate a descriptor with a read buffer and reset buffer
- */
-/* $begin rio_readinitb */
-void rio_readinitb(rio_t *rp, int fd)
-{
-    rp-&gt;rio_fd = fd;
-    rp-&gt;rio_cnt = 0;
-    rp-&gt;rio_bufptr = rp-&gt;rio_buf;
-}
-/* $end rio_readinitb */
-
-/*
- * rio_readnb - Robustly read n bytes (buffered)
- */
-/* $begin rio_readnb */
-ssize_t rio_readnb(rio_t *rp, void *usrbuf, size_t n)
-{
-    size_t nleft = n;
-    ssize_t nread;
-    char *bufp = usrbuf;
-
-    while (nleft &gt; 0)
-    {
-        if ((nread = rio_read(rp, bufp, nleft)) &lt; 0)
-            return -1; /* errno set by read() */
-        else if (nread == 0)
-            break; /* EOF */
-        nleft -= nread;
-        bufp += nread;
-    }
-    return (n - nleft); /* return &gt;= 0 */
-}
-/* $end rio_readnb */
-
-/* 
- * rio_readlineb - Robustly read a text line (buffered)
- */
-/* $begin rio_readlineb */
-ssize_t rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
-{
-    int n, rc;
-    char c, *bufp = usrbuf;
-
-    for (n = 1; n &lt; maxlen; n++)
-    {
-        if ((rc = rio_read(rp, &amp;c, 1)) == 1)
-        {
-            *bufp++ = c;
-            if (c == '\n')
-            {
-                n++;
-                break;
-            }
-        }
-        else if (rc == 0)
-        {
-            if (n == 1)
-                return 0; /* EOF, no data read */
-            else
-                break; /* EOF, some data was read */
-        }
-        else
-            return -1; /* Error */
-    }
-    *bufp = 0;
-    return n - 1;
-}
-/* $end rio_readlineb */
 </code></pre>
+<ul>
+<li>避免了当thread_guard的生命周期长于它所引用的线程时引起不愉快的后果？</li>
+<li>还意味着，一旦所有权转移到这个对象以后，没有谁能连接或者分离这个线程（因为thread_guard是传入一个引用，在main thread里仍然可以对那个thread进行操作，而scoped_thread是直接把thread move进scoped_thread对象里了）。</li>
+</ul>
+<h3 id="运行时选择线程数量-2">运行时选择线程数量?</h3>
+<p>std::thread::hardware_concurrency()</p>
+<p><strong>SUMMARY: 管理c++的线程，要注意thread不能copy，而且要考虑何时join(thread_guard, scoped_thread)</strong></p>
 
-          <div class="toc-container"></div>
+          <div class="toc-container"><ul class="markdownIt-TOC">
+<li><a href="#%E7%AE%A1%E7%90%86%E7%BA%BF%E7%A8%8B">管理线程</a></li>
+<li><a href="#recall">Recall</a><br>
+*
+<ul>
+<li><a href="#%E4%BC%A0%E5%85%A5thread%E7%9A%84%E5%8F%82%E6%95%B0%E4%B8%B4%E6%97%B6%E5%AF%B9%E8%B1%A1%E6%9C%89%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98">传入thread的参数？临时对象有什么问题？</a></li>
+<li><a href="#%E7%BA%BF%E7%A8%8Bdetach%E5%BC%95%E7%94%A8%E4%BA%86%E4%B8%BB%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90">线程detach引用了主线程的资源？</a></li>
+<li><a href="#%E5%BC%82%E5%B8%B8%E6%83%85%E5%86%B5%E4%B8%8B%E4%BD%95%E6%97%B6%E8%B0%83%E7%94%A8join">异常情况下何时调用join？</a></li>
+<li><a href="#stdthread-%E4%BC%A0%E5%85%A5-%E5%BC%95%E7%94%A8">std::thread 传入 引用?</a></li>
+<li><a href="#%E8%BD%AC%E7%A7%BB%E7%BA%BF%E7%A8%8B%E6%89%80%E6%9C%89%E6%9D%83">转移线程所有权</a></li>
+<li><a href="#%E6%AF%94thread_guard%E6%9B%B4%E5%A5%BD%E7%9A%84scoped_thread">比thread_guard更好的scoped_thread？</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E9%80%89%E6%8B%A9%E7%BA%BF%E7%A8%8B%E6%95%B0%E9%87%8F">运行时选择线程数量?</a></li>
+</ul>
+</li>
+<li><a href="#notes">Notes</a><br>
+*
+<ul>
+<li><a href="#%E4%BC%A0%E5%85%A5thread%E7%9A%84%E5%8F%82%E6%95%B0%E4%B8%B4%E6%97%B6%E5%AF%B9%E8%B1%A1%E6%9C%89%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98-2">传入thread的参数？临时对象有什么问题？</a></li>
+<li><a href="#%E7%BA%BF%E7%A8%8Bdetach%E5%BC%95%E7%94%A8%E4%BA%86%E4%B8%BB%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%B5%84%E6%BA%90-2">线程detach引用了主线程的资源？</a></li>
+<li><a href="#%E5%BC%82%E5%B8%B8%E6%83%85%E5%86%B5%E4%B8%8B%E4%BD%95%E6%97%B6%E8%B0%83%E7%94%A8join-2">异常情况下何时调用join？</a></li>
+<li><a href="#stdthread-%E4%BC%A0%E5%85%A5-%E5%BC%95%E7%94%A8-2">std::thread 传入 引用?</a></li>
+<li><a href="#%E8%BD%AC%E7%A7%BB%E7%BA%BF%E7%A8%8B%E6%89%80%E6%9C%89%E6%9D%83-2">转移线程所有权</a></li>
+<li><a href="#%E6%AF%94thread_guard%E6%9B%B4%E5%A5%BD%E7%9A%84scoped_thread-2">比thread_guard更好的scoped_thread？</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E9%80%89%E6%8B%A9%E7%BA%BF%E7%A8%8B%E6%95%B0%E9%87%8F-2">运行时选择线程数量?</a></li>
+</ul>
+</li>
+</ul>
+</div>
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/2/">
+            <a href="https://yangyueren.github.io/post/mindspore-development/">
               <span class="post-title">
-                ES使用过程中遇到的坑&rarr;
+                华为MindSpore数据集加载算子开发&rarr;
               </span>
             </a>
           </p>
