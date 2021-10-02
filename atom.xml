@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://yangyueren.github.io</id>
     <title>一只木头人</title>
-    <updated>2021-10-02T17:53:37.300Z</updated>
+    <updated>2021-10-02T17:56:02.139Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://yangyueren.github.io"/>
     <link rel="self" href="https://yangyueren.github.io/atom.xml"/>
@@ -16,11 +16,7 @@
         <link href="https://yangyueren.github.io/post/chapter2-guan-li-xian-cheng/">
         </link>
         <updated>2021-10-02T17:51:20.000Z</updated>
-        <content type="html"><![CDATA[<p>Created: October 29, 2020 7:59 PM (GMT)<br>
-Created by: yangyueren<br>
-Tags: 管理线程<br>
-chapter: 2</p>
-<h1 id="管理线程">管理线程</h1>
+        <content type="html"><![CDATA[<h1 id="管理线程">管理线程</h1>
 <h1 id="recall">Recall</h1>
 <h3 id="传入thread的参数临时对象有什么问题">传入thread的参数？临时对象有什么问题？</h3>
 <h3 id="线程detach引用了主线程的资源">线程detach引用了主线程的资源？</h3>
