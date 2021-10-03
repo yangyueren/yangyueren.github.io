@@ -10,14 +10,14 @@
 <meta name="keywords" content="">
 <meta name="description" content="欢迎访问[一只木头人]的个人博客">
 <meta name="author" content="kveln">
-<title>MIT6.S081 syscall | 一只木头人</title>
+<title>chapter3 线程间共享数据 | 一只木头人</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.bootcss.com/font-awesome/5.11.2/css/all.min.css" rel="stylesheet">
 <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
 <link
   href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800'
   rel='stylesheet' type='text/css'>
-<link rel="alternate" type="application/rss+xml" title="MIT6.S081 syscall | 一只木头人 » Feed"
+<link rel="alternate" type="application/rss+xml" title="chapter3 线程间共享数据 | 一只木头人 » Feed"
   href="https://yangyueren.github.io/atom.xml">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.15.10/build/styles/androidstudio.min.css">
@@ -30,8 +30,8 @@
 
 <script>hljs.initHighlightingOnLoad();</script>
 
-  <meta property="og:description" content="MIT6.S081 syscall" />
-  <meta property="og:url" content="https://yangyueren.github.io/post/mit6s081-syscall/" />
+  <meta property="og:description" content="chapter3 线程间共享数据" />
+  <meta property="og:url" content="https://yangyueren.github.io/post/chapter3-xian-cheng-jian-gong-xiang-shu-ju/" />
   <meta property="og:locale" content="zh-CN" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="一只木头人" />
@@ -151,13 +151,15 @@
             <div class="post-heading">
               <span class="tags">
                 
-                <a href="https://yangyueren.github.io/tag/NlD7320KL/" class="tag">MIT6.S081</a>
+                <a href="https://yangyueren.github.io/tag/c4spScV9y/" class="tag">多线程</a>
+                
+                <a href="https://yangyueren.github.io/tag/1YnKKTmmU/" class="tag">C++</a>
                 
               </span>
-              <h1>MIT6.S081 syscall</h1>
+              <h1>chapter3 线程间共享数据</h1>
               <span class="meta">
                 Posted on
-                2021-03-16，5 min read
+                2021-10-03，1 min read
               </span>
             </div>
           
@@ -172,224 +174,15 @@
       <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto post-content-container">
           
-          <h2 id="syscall的原理">syscall的原理：</h2>
-<p>在shell中，当输入某个命令，比如sysinfo，shell fork出一个进程调用sysinfo.c处理sysinfo命令，此时还处于user space；在sysinfo.c的main函数中，会进行系统调用，比如系统调用sysinfo，read，kill等，这些系统调用是通过usys.pl脚本，把sysinfo通过ecall跳转到kernel的部分。</p>
-<pre><code>sub entry {
-    my $name = shift;
-    print &quot;.global $name\n&quot;;
-    print &quot;${name}:\n&quot;;
-    print &quot; li a7, SYS_${name}\n&quot;;
-    print &quot; ecall\n&quot;;
-    print &quot; ret\n&quot;;
-}
-	
-entry(&quot;fork&quot;);
-entry(&quot;exit&quot;);
-entry(&quot;wait&quot;);
-entry(&quot;pipe&quot;);
-entry(&quot;sysinfo&quot;);
-</code></pre>
-<p>在kernel的syscall里面查SYS_sysinfo的函数位置，如何查找位置呢，kernel/syscall.c有一个</p>
-<pre><code>static uint64 (*syscalls[])(void) = {
-[SYS_fork]    sys_fork,
-[SYS_exit]    sys_exit,
-[SYS_wait]    sys_wait,
-[SYS_pipe]    sys_pipe
-}
-</code></pre>
-<p>可以通过SYSinfo找到对应的sys_sysinfo kernel中的函数，进行操作。</p>
-<h2 id="system-call-tracing">System call tracing</h2>
-<p>添加一个trace的系统调用</p>
-<p>sysproc.c</p>
-<pre><code>uint64
-sys_trace(void)
-{
-  int mask;
-  if(argint(0, &amp;mask) &lt; 0)
-    return -1;
-  myproc()-&gt;trace_mask = mask; //进程信息中记录mask
-  return 0;
-}
-</code></pre>
-<p>proc.h</p>
-<pre><code>
-// Per-process state
-struct proc {
-  struct spinlock lock;
+          <p>https://www.notion.so/chapter3-df92b90b9f794da5a459975defd57b45</p>
 
-  // p-&gt;lock must be held when using these:
-  enum procstate state;        // Process state
-  struct proc *parent;         // Parent process
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  int xstate;                  // Exit status to be returned to parent's wait
-  int pid;                     // Process ID
-
-  // these are private to the process, so p-&gt;lock need not be held.
-  uint64 kstack;               // Virtual address of kernel stack
-  uint64 sz;                   // Size of process memory (bytes)
-  pagetable_t pagetable;       // User page table
-  struct trapframe *trapframe; // data page for trampoline.S
-  struct context context;      // swtch() here to run process
-  struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
-  int trace_mask;               //记录trace mask
-
-};
-</code></pre>
-<p>syscall.c</p>
-<pre><code>
-static uint64 (*syscalls[])(void) = {
-[SYS_fork]    sys_fork,
-...
-[SYS_sysinfo] sys_sysinfo,
-};
-
-
-char* syscall_name[23] = {
-        &quot;0&quot;,
-        &quot;syscall fork&quot;,  
-        &quot;syscall exit&quot;,  
-        &quot;syscall wait&quot;,  
-        &quot;syscall pipe&quot;,  
-        &quot;syscall read&quot;,
-        &quot;syscall kill&quot;,
-        &quot;syscall exec&quot;,
-        &quot;syscall fstat&quot;,
-        &quot;syscall chdir&quot;,
-        &quot;syscall dup&quot;,
-        &quot;syscall getpid&quot;,
-        &quot;syscall sbrk&quot;,
-        &quot;syscall sleep&quot;,
-        &quot;syscall uptime&quot;,
-        &quot;syscall open&quot;,
-        &quot;syscall write&quot;,
-        &quot;syscall mknod&quot;,
-        &quot;syscall unlink&quot;,
-        &quot;syscall link&quot;,
-        &quot;syscall mkdir&quot;,
-        &quot;syscall close&quot;,
-        &quot;syscall trace&quot;,
-};
-void
-syscall(void)
-{
-
-  int num;
-  struct proc *p = myproc();
-
-  num = p-&gt;trapframe-&gt;a7;
-  if(num &gt; 0 &amp;&amp; num &lt; NELEM(syscalls) &amp;&amp; syscalls[num]) {
-
-    p-&gt;trapframe-&gt;a0 = syscalls[num]();
-    int trace_mask = p-&gt;trace_mask;
-	//判断是否对该syscall显示trace
-    if(trace_mask &gt;&gt; num &amp; 0x1){
-        printf(&quot;%d: %s -&gt; %d\n&quot;, p-&gt;pid, syscall_name[num], p-&gt;trapframe-&gt;a0);
-    }
-    
-  } else {
-    printf(&quot;%d %s: unknown sys call %d\n&quot;,
-            p-&gt;pid, p-&gt;name, num);
-    p-&gt;trapframe-&gt;a0 = -1;
-  }
-}
-
-
-
-</code></pre>
-<p>处理子进程，让mask能够继承<br>
-proc.c</p>
-<pre><code class="language-c">int
-fork(void)
-{
-  int i, pid;
-  struct proc *np;
-  struct proc *p = myproc();
-
-  // Allocate process.
-  if((np = allocproc()) == 0){
-    return -1;
-  }
-
-  // Copy user memory from parent to child.
-  if(uvmcopy(p-&gt;pagetable, np-&gt;pagetable, p-&gt;sz) &lt; 0){
-    freeproc(np);
-    release(&amp;np-&gt;lock);
-    return -1;
-  }
-  np-&gt;sz = p-&gt;sz;
-
-  np-&gt;parent = p;
-
-  // copy saved user registers.
-  *(np-&gt;trapframe) = *(p-&gt;trapframe);
-
-  // Cause fork to return 0 in the child.
-  np-&gt;trapframe-&gt;a0 = 0;
-
-  // increment reference counts on open file descriptors.
-  for(i = 0; i &lt; NOFILE; i++)
-    if(p-&gt;ofile[i])
-      np-&gt;ofile[i] = filedup(p-&gt;ofile[i]);
-  np-&gt;cwd = idup(p-&gt;cwd);
-
-  safestrcpy(np-&gt;name, p-&gt;name, sizeof(p-&gt;name));
-
-  pid = np-&gt;pid;
-
-  np-&gt;state = RUNNABLE;
-
-  np-&gt;trace_mask = p-&gt;trace_mask; //传递trace_mask
-
-  release(&amp;np-&gt;lock);
-
-  return pid;
-}
-</code></pre>
-<h2 id="sysinfo">Sysinfo</h2>
-<p>打印出空闲的内存和未使用的进程<br>
-· 如何获取空闲内存：遍历kmem.freelist，每个元素是一个page<br>
-· 如何获取未使用的进程：遍历proc.c中的struct proc proc[NPROC];<br>
-· 如何将上述信息从内核传递到user space：copyout</p>
-<p>sysproc.c</p>
-<pre><code class="language-c">
-uint64
-sys_sysinfo(void)
-{
-  struct sysinfo info;
-  uint64 addr;
-  // 获取用户态传入的sysinfo结构体
-  if (argaddr(0, &amp;addr) &lt; 0)
-    return -1;
-  struct proc* p = myproc();
-  info.freemem = free_memory();
-  info.nproc = proc_unused_num();
-  
-  //copyout 传入user pagetable，info结构体的user space地址，把kernel中的info copy过去
-  if (copyout(p-&gt;pagetable, addr, (char*)&amp;info, sizeof(info)) &lt; 0)
-    return -1;
-  return 0;
-}
-</code></pre>
-
-          <div class="toc-container"><ul class="markdownIt-TOC">
-<li>
-<ul>
-<li><a href="#syscall%E7%9A%84%E5%8E%9F%E7%90%86">syscall的原理：</a></li>
-<li><a href="#system-call-tracing">System call tracing</a></li>
-<li><a href="#sysinfo">Sysinfo</a></li>
-</ul>
-</li>
-</ul>
-</div>
+          <div class="toc-container"></div>
           
           <hr />
           <p class="next-post">下一篇：
-            <a href="https://yangyueren.github.io/post/mit6s081-util/">
+            <a href="https://yangyueren.github.io/post/chapter2-guan-li-xian-cheng/">
               <span class="post-title">
-                MIT6.S081 util&rarr;
+                chapter2 管理线程&rarr;
               </span>
             </a>
           </p>
